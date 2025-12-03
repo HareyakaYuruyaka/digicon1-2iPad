@@ -50,6 +50,13 @@
 
             <div id="qrContainer" class="qr-container"></div>
 
+            <div id="saveActions" class="save-actions">
+                <button id="shareToPhoneButton">スマホに送る（AirDrop / 共有）</button>
+                <button id="regenQrButton">QRをさらに圧縮して生成</button>
+                <p id="saveStatus" style="font-size:13px;color:#444;margin-top:8px;"></p>
+                <p id="airdropHint" class="airdrop-hint">AirDropで受け取るには：来場者のiPhoneで「AirDropを受信する」に設定し、この端末の「スマホに送る」をタップ → 来場者のiPhone名を選んで受信してください。受信後、写真アプリで保存できます。</p>
+            </div>
+
             <div id="fallbackArea" class="fallback-area">
                 <p>QRに収まらない画像は、以下で直接ダウンロードしてください。</p>
                 <img id="previewImage" alt="キャンバスプレビュー">
