@@ -45,7 +45,7 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- ★変更: ご提示の定数に完全に戻しました ---
+    // --- シミュレーション定数 ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
@@ -187,15 +187,10 @@ window.addEventListener('load', () => {
         }
     }
 
-    // ★変更: 元のコードのロジックに戻しました（横持ち用の軸設定）
     function handleOrientation(event) {
         const sensitivity = 0.05; 
 
         if (event.gamma !== null && event.beta !== null) {
-            // 横持ちの場合: 
-            // デバイスの前後(beta) -> 画面の左右(X)
-            // デバイスの左右(gamma) -> 画面の上下(Y)
-            
             tilt.x = event.beta * sensitivity; 
             tilt.y = -event.gamma * sensitivity;
         }
@@ -316,6 +311,7 @@ window.addEventListener('load', () => {
         previewImage.src = '';
     }
 
+    // ★重要変更: CSSのフィルター(blur+contrast)を画像生成時にも適用する
     function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
@@ -323,11 +319,23 @@ window.addEventListener('load', () => {
         tmp.width = w; tmp.height = h;
         const ctx = tmp.getContext('2d');
 
+        // 1. 白背景を描画
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0,w,h);
+        ctx.fillRect(0, 0, w, h);
 
+        // 2. フィルターを適用してからキャンバスを描画
+        // style.cssと同じ値を設定: blur(10px) contrast(20)
+        // ※背景の白に影響しないよう、キャンバスの描画時のみ適用する
+        ctx.save();
+        if (ctx.filter !== undefined) {
+            ctx.filter = 'blur(10px) contrast(20)';
+        }
+        
+        // 描画 (permanentCanvas と particleCanvas を重ねる)
         ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
         ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
+        
+        ctx.restore(); // フィルター解除
 
         const mt = mimeType || 'image/png';
         if (mt === 'image/jpeg') { return tmp.toDataURL('image/jpeg', quality || 0.7); }
@@ -360,7 +368,6 @@ window.addEventListener('load', () => {
         cupVisual.scrollTop = cupVisual.scrollHeight;
     }
 
-    // ★変更: 面積100、密度0.05に戻しました
     function pourFromCup(centerX, centerY) {
         const AREA_PER_UNIT = 100; 
 
@@ -466,7 +473,6 @@ window.addEventListener('load', () => {
                 p.gracePeriod--;
             }
 
-            // ★変更: センサー有効時はtiltをそのまま加算（元のコードと同じ挙動）
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
                     p.vx += tilt.x;
