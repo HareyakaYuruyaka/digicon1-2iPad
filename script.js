@@ -479,4 +479,61 @@ window.addEventListener('load', () => {
                 p.gracePeriod--;
             }
 
-            if (
+            if (p.gracePeriod <= 0) { 
+                if (isSensorActive) {
+                    p.vx += tilt.x;
+                    p.vy += tilt.y;
+                } else {
+                    const dx_mouse = mouse.x - p.x;
+                    const dy_mouse = mouse.y - p.y;
+                    p.vx += dx_mouse * gravityStrength;
+                    p.vy += dy_mouse * gravityStrength;
+                }
+            }
+            
+            p.vx *= friction;
+            p.vy *= friction;
+
+            // 衝突判定
+            for (let j = i - 1; j >= 0; j--) {
+                const p_other = particles[j];
+                const dx = p.x - p_other.x;
+                const dy = p.y - p_other.y;
+                const distSq = dx*dx + dy*dy;
+                const minDist = p.radius + p_other.radius;
+                
+                if (distSq < minDist * minDist) {
+                    const distance = Math.sqrt(distSq);
+                    const overlap = minDist - distance;
+                    const norm_x = distance === 0 ? 1 : dx / distance; 
+                    const norm_y = distance === 0 ? 0 : dy / distance;
+                    const force = overlap * repulsionStrength * 0.5;
+                    p.vx += norm_x * force; p.vy += norm_y * force;
+                    p_other.vx -= norm_x * force;
+                    p_other.vy -= norm_y * force;
+                }
+            }
+
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.radius < p.maxRadius) {
+                p.radius += 0.15;
+            }
+
+            if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.5; }
+            if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
+            if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
+            if (p.y > particleCanvas.height - p.radius) { p.y = particleCanvas.height - p.radius; p.vy *= -0.5; }
+        }
+    }
+    
+    function drawParticles() {
+        for (let i = 0; i < particles.length; i++) {
+            drawOnParticle(particles[i]);
+        }
+    }
+
+    clearPermanentCanvas(); 
+    animate();
+});
