@@ -110,3 +110,38 @@ button {
 }
 #particleCanvas { z-index: 2; cursor: default; }
 #permanentCanvas { z-index: 1; background-color: #ffffff; }
+
+/* オーバーレイ（保存用） */
+.save-overlay {
+    position: fixed;
+    inset: 0;
+    display: none; /* 表示は JS で切り替え */
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.save-overlay[aria-hidden="false"] {
+    display: flex;
+}
+.save-overlay-backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.55);
+}
+.save-overlay-content {
+    position: relative;
+    z-index: 2;
+    background: #fff;
+    padding: 18px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    max-width: 92%;
+    max-height: 92%;
+    overflow: auto;
+    text-align: center;
+}
+.close-overlay {
+    position: absolute; right: 8px; top: 8px; border: none; background: transparent; font-size: 18px; cursor: pointer;
+}
+.qr-container { width: 320px; height: 320px; margin: 10px auto; }
+.fallback-area { display: none; text-align: center; }
+.fallback-area img { max-width: 320px; height: auto; display: block; margin: 8px auto; border: 1px solid #ddd; }
+.fallback-area a { display: inline-block; margin-top: 8px; padding: 8px 12px; background: #1e88e5; color: #fff; text-decoration: none; border-radius: 6px; }
