@@ -30,6 +30,7 @@
             </div>
 
             <button id="resetButton">全部やり直す</button>
+            <button id="saveImageButton">画像を保存</button>
         </div>
 
         <div class="canvas-area">
@@ -41,6 +42,22 @@
 
     </div>
     
+    <!-- オーバーレイ: 画面を暗くし、QRやプレビューを表示 -->
+    <div id="saveOverlay" class="save-overlay" aria-hidden="true">
+        <div class="save-overlay-backdrop"></div>
+        <div class="save-overlay-content">
+            <button id="closeSaveOverlay" class="close-overlay">✕</button>
+
+            <div id="qrContainer" class="qr-container"></div>
+
+            <div id="fallbackArea" class="fallback-area">
+                <p>QRに収まらない画像は、以下で直接ダウンロードしてください。</p>
+                <img id="previewImage" alt="キャンバスプレビュー">
+                <a id="downloadLink" download="pouring.png">画像をダウンロード</a>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
