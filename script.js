@@ -82,11 +82,22 @@ window.addEventListener('load', () => {
     const previewImage = document.getElementById('previewImage');
     const downloadLink = document.getElementById('downloadLink');
     const closeSaveOverlay = document.getElementById('closeSaveOverlay');
+    const shareToPhoneButton = document.getElementById('shareToPhoneButton');
+    const regenQrButton = document.getElementById('regenQrButton');
+    const saveStatus = document.getElementById('saveStatus');
+    const airdropHint = document.getElementById('airdropHint');
 
     saveImageButton && saveImageButton.addEventListener('click', async () => {
         openSaveOverlay();
     });
     closeSaveOverlay && closeSaveOverlay.addEventListener('click', () => closeSaveOverlayFunc());
+    shareToPhoneButton && shareToPhoneButton.addEventListener('click', () => {
+        // re-run share flow explicitly
+        shareCurrentImageToPhone();
+    });
+    regenQrButton && regenQrButton.addEventListener('click', () => {
+        attemptGenerateQRWithRetries();
+    });
 
     function openSaveOverlay() {
         if (!saveOverlay) return;
@@ -98,60 +109,85 @@ window.addEventListener('load', () => {
         // まずは合成画像を作る
         const dataURL = generateCombinedDataURL();
 
-        // ブラウザの共有APIが使える場合は直接共有を試みる（モバイルで自然な保存体験）
-        // ただし files を伴う共有はサポートが限定的
-        fetch(dataURL)
-            .then(res => res.blob())
-            .then(async (blob) => {
-                const file = new File([blob], 'pouring.png', { type: blob.type });
+        // まずは共有を試し、無理なら QR を作れるか段階的に試す
+        shareCurrentImageToPhone();
+        attemptGenerateQRWithRetries();
 
-                // Web Share API Level 2 (files) に対応しているか
-                if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-                    try {
-                        await navigator.share({ files: [file], title: 'My Pouring Art' });
-                        // 共有ダイアログが閉じたらオーバーレイを自動で閉じる
-                        closeSaveOverlayFunc();
-                        return;
-                    } catch (err) {
-                        // ユーザーがキャンセルした可能性。フォールバックUIを表示する。
-                        console.warn('共有失敗:', err);
-                    }
-                }
+        // AirDrop案内をハイライト（再表示ごとにアニメを起動）
+        if (airdropHint) {
+            airdropHint.classList.remove('highlight');
+            // reflow 強制
+            void airdropHint.offsetWidth;
+            airdropHint.classList.add('highlight');
+            const onAnimEnd = () => { airdropHint.classList.remove('highlight'); airdropHint.removeEventListener('animationend', onAnimEnd); };
+            airdropHint.addEventListener('animationend', onAnimEnd);
+        }
+    }
 
-                // 共有が使えない／失敗した場合は、新しいタブで開く（ユーザーは長押しで保存）
+    // Try to share current image via Web Share API (files) if available
+    function shareCurrentImageToPhone() {
+        saveStatus.textContent = '共有を試みています...（近くのスマホへ送信できます）';
+        const dataURL = generateCombinedDataURL();
+        fetch(dataURL).then(r => r.blob()).then(async (blob) => {
+            const file = new File([blob], 'pouring.png', { type: blob.type });
+            if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
                 try {
-                    // 新しいタブで dataURL を開く（ユーザー操作中なのでポップアップブロックされにくい）
-                    const w = window.open();
-                    if (w) {
-                        w.document.write('<title>Pouring Art</title>');
-                        const img = w.document.createElement('img');
-                        img.src = dataURL;
-                        img.style.maxWidth = '100%';
-                        img.alt = 'Pouring Art';
-                        w.document.body.style.margin = '0';
-                        w.document.body.style.display = 'flex';
-                        w.document.body.style.justifyContent = 'center';
-                        w.document.body.style.alignItems = 'center';
-                        w.document.body.appendChild(img);
-                        // 併せてフォールバックUIにもセット
-                        previewImage.src = dataURL;
-                        downloadLink.href = dataURL;
-                    } else {
-                        // ポップアップが開けなければ overlay にプレビューとリンクを表示
-                        previewImage.src = dataURL;
-                        downloadLink.href = dataURL;
-                    }
+                    await navigator.share({ files: [file], title: 'Pouring Art' });
+                    saveStatus.textContent = '共有しました。スマホで確認してください。';
+                    closeSaveOverlayFunc();
+                    return;
                 } catch (err) {
-                    console.error('プレビュー表示エラー:', err);
-                    previewImage.alt = 'プレビューを表示できませんでした';
-                    downloadLink.href = dataURL;
+                    console.warn('共有がキャンセルまたは失敗:', err);
+                    saveStatus.textContent = '共有操作がキャンセルされました。QR生成を試します。';
                 }
-            })
-            .catch(err => {
-                console.error('画像ブロブ変換エラー:', err);
-                previewImage.alt = '画像を生成できませんでした';
-                downloadLink.href = '#';
-            });
+            } else {
+                saveStatus.textContent = 'デバイスの共有機能が使えません。QRを試します。';
+            }
+        }).catch(err => {
+            console.error('share blob error', err);
+            saveStatus.textContent = '共有準備でエラーが発生しました。QRを試します。';
+        });
+    }
+
+    // Attempt to make a QR by trying smaller thumbnails/qualities until it fits
+    function attemptGenerateQRWithRetries() {
+        saveStatus.textContent = 'QR生成を試しています...';
+        const MAX_QR_CHARS = 1200; // safe target for Google QR
+        const widths = [320, 240, 200, 160, 120];
+        const qualities = [0.7, 0.6, 0.5, 0.4, 0.3];
+
+        (async () => {
+            let found = false;
+            for (let w of widths) {
+                for (let q of qualities) {
+                    const thumb = generateCombinedDataURL(w, q);
+                    if (thumb.length <= MAX_QR_CHARS) {
+                        // generate QR via Google Charts API
+                        const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumb);
+                        qrContainer.innerHTML = '';
+                        const img = document.createElement('img');
+                        img.src = api;
+                        img.alt = 'QR code';
+                        img.style.maxWidth = '100%';
+                        qrContainer.appendChild(img);
+                        qrContainer.style.display = '';
+                        fallbackArea.style.display = 'none';
+                        saveStatus.textContent = `QR生成成功 (w=${w}, q=${q}) - スマホでスキャンしてください`;
+                        found = true;
+                        return;
+                    }
+                }
+            }
+            if (!found) {
+                saveStatus.textContent = 'QRに収まりません。共有（AirDrop等）をお試しください。下のダウンロードリンクからも取得できます。';
+                // set full preview + download
+                const full = generateCombinedDataURL();
+                previewImage.src = full;
+                downloadLink.href = full;
+                qrContainer.style.display = 'none';
+                fallbackArea.style.display = '';
+            }
+        })();
     }
 
     function closeSaveOverlayFunc() {
