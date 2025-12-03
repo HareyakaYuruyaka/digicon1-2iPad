@@ -25,6 +25,26 @@ window.addEventListener('load', () => {
     let tilt = { x: 0, y: 0 };
     let isSensorActive = false; // センサーが有効かどうかのフラグ
 
+    // --- 簡易デバッグボックス（端末での診断用） ---
+    const __debugBox = document.createElement('div');
+    __debugBox.id = '__debugBox';
+    __debugBox.style.position = 'fixed';
+    __debugBox.style.right = '12px';
+    __debugBox.style.top = '12px';
+    __debugBox.style.background = 'rgba(0,0,0,0.6)';
+    __debugBox.style.color = '#fff';
+    __debugBox.style.padding = '6px 8px';
+    __debugBox.style.borderRadius = '6px';
+    __debugBox.style.fontSize = '12px';
+    __debugBox.style.zIndex = 20000;
+    __debugBox.style.maxWidth = '220px';
+    __debugBox.style.pointerEvents = 'none';
+    document.body.appendChild(__debugBox);
+
+    function updateDebugBox() {
+        __debugBox.textContent = `pourMode=${isPourMode} colors=${cupColors.length} particles=${particles.length}`;
+    }
+
     // --- シミュレーション定数 ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
@@ -34,6 +54,8 @@ window.addEventListener('load', () => {
 
     // --- イベントリスナー ---
     particleCanvas.addEventListener('click', (event) => {
+        console.log('particleCanvas click event, isPourMode=', isPourMode);
+        updateDebugBox();
         if (!isPourMode) return;
         const rect = particleCanvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
@@ -41,6 +63,20 @@ window.addEventListener('load', () => {
         pourFromCup(x, y);
         setPourMode(false);
     });
+    // touchstart をサポート（iPadなどのタッチイベントで click が発火しない場合のフォールバック）
+    particleCanvas.addEventListener('touchstart', (ev) => {
+        ev.preventDefault();
+        updateDebugBox();
+        console.log('particleCanvas touchstart event, isPourMode=', isPourMode);
+        if (!isPourMode) return;
+        const touch = ev.touches && ev.touches[0];
+        if (!touch) return;
+        const rect = particleCanvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        pourFromCup(x, y);
+        setPourMode(false);
+    }, { passive: false });
     particleCanvas.addEventListener('mousemove', (event) => {
         const rect = particleCanvas.getBoundingClientRect();
         mouse.x = event.clientX - rect.left;
@@ -59,6 +95,7 @@ window.addEventListener('load', () => {
                 updateCupVisual();
                 console.log('Added to cup:', color, 'cupColors length=', cupColors.length);
                 showToast('コップに色を追加しました');
+                updateDebugBox();
             } catch (e) {
                 console.error('addToCupButton handler error', e);
                 alert('エラーが発生しました。ブラウザのコンソールを確認してください。');
@@ -87,12 +124,15 @@ window.addEventListener('load', () => {
         pourFromCupButton.addEventListener('click', () => {
             try {
                 if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
+                    console.log('pourFromCupButton clicked, cupColors=', cupColors.length);
+                    updateDebugBox();
                 if (!isSensorActive) {
                     try { startSensor(); } catch (e) { console.warn('startSensor error', e); }
                 }
                 setPourMode(true);
                 showToast('キャンバスをタップして流してください');
                 console.log('Pour mode enabled');
+                updateDebugBox();
             } catch (e) {
                 console.error('pourFromCupButton handler error', e);
                 alert('エラーが発生しました。コンソールを確認してください。');
@@ -440,6 +480,7 @@ window.addEventListener('load', () => {
         clearParticleCanvas();
         updateParticles();
         drawParticles();
+        updateDebugBox();
         requestAnimationFrame(animate);
     }
 
