@@ -45,16 +45,17 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- シミュレーション定数 ---
+    // --- シミュレーション定数（ご指定の値） ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
     const GRAVITY_GRACE_PERIOD = 0; 
 
-    // --- イベントリスナー（座標計算はiPad用に補正版を使用） ---
+    // --- イベントリスナー（iPad用に座標補正を追加） ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
+        // 画面上の表示サイズと、キャンバスの実サイズの比率を計算
         const scaleX = particleCanvas.width / rect.width;
         const scaleY = particleCanvas.height / rect.height;
         return {
@@ -118,7 +119,6 @@ window.addEventListener('load', () => {
         pourFromCupButton.addEventListener('click', () => {
             if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
             
-            // センサー起動を試みる
             if (!isSensorActive) {
                 startSensor();
             }
@@ -181,7 +181,6 @@ window.addEventListener('load', () => {
                 })
                 .catch(e => console.error(e));
         } else {
-            // Android, PCなど
             isSensorActive = true;
             window.addEventListener('deviceorientation', handleOrientation);
         }
@@ -189,7 +188,6 @@ window.addEventListener('load', () => {
 
     function handleOrientation(event) {
         const sensitivity = 0.05; 
-
         if (event.gamma !== null && event.beta !== null) {
             tilt.x = event.beta * sensitivity; 
             tilt.y = -event.gamma * sensitivity;
@@ -311,35 +309,43 @@ window.addEventListener('load', () => {
         previewImage.src = '';
     }
 
-    // ★重要変更: CSSのフィルター(blur+contrast)を画像生成時にも適用する
+    // ★重要修正: 画像保存時にも「とろっとした効果」を適用する
     function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
-        const tmp = document.createElement('canvas');
-        tmp.width = w; tmp.height = h;
-        const ctx = tmp.getContext('2d');
+        
+        // 1. 中間レイヤー（透明）を作成
+        const gooeyCanvas = document.createElement('canvas');
+        gooeyCanvas.width = w; 
+        gooeyCanvas.height = h;
+        const gCtx = gooeyCanvas.getContext('2d');
 
-        // 1. 白背景を描画
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, w, h);
-
-        // 2. フィルターを適用してからキャンバスを描画
-        // style.cssと同じ値を設定: blur(10px) contrast(20)
-        // ※背景の白に影響しないよう、キャンバスの描画時のみ適用する
-        ctx.save();
-        if (ctx.filter !== undefined) {
-            ctx.filter = 'blur(10px) contrast(20)';
+        // 2. 透明なレイヤーに対してフィルター（ぼかし+コントラスト）をかけて描画
+        // 白背景の上ではなく、透明の上で計算させることでアルファチャンネルによる結合が起きる
+        gCtx.save();
+        if (gCtx.filter !== undefined) {
+            gCtx.filter = 'blur(10px) contrast(20)';
         }
-        
-        // 描画 (permanentCanvas と particleCanvas を重ねる)
-        ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
-        ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
-        
-        ctx.restore(); // フィルター解除
+        gCtx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
+        gCtx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
+        gCtx.restore();
+
+        // 3. 最終出力用キャンバス（白背景）を作成
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = w;
+        finalCanvas.height = h;
+        const fCtx = finalCanvas.getContext('2d');
+
+        // 白で塗りつぶし
+        fCtx.fillStyle = '#ffffff';
+        fCtx.fillRect(0, 0, w, h);
+
+        // とろっとさせたレイヤーを重ねる
+        fCtx.drawImage(gooeyCanvas, 0, 0);
 
         const mt = mimeType || 'image/png';
-        if (mt === 'image/jpeg') { return tmp.toDataURL('image/jpeg', quality || 0.7); }
-        return tmp.toDataURL('image/png');
+        if (mt === 'image/jpeg') { return finalCanvas.toDataURL('image/jpeg', quality || 0.7); }
+        return finalCanvas.toDataURL('image/png');
     }
 
     // --- 関数 ---
@@ -473,61 +479,4 @@ window.addEventListener('load', () => {
                 p.gracePeriod--;
             }
 
-            if (p.gracePeriod <= 0) { 
-                if (isSensorActive) {
-                    p.vx += tilt.x;
-                    p.vy += tilt.y;
-                } else {
-                    const dx_mouse = mouse.x - p.x;
-                    const dy_mouse = mouse.y - p.y;
-                    p.vx += dx_mouse * gravityStrength;
-                    p.vy += dy_mouse * gravityStrength;
-                }
-            }
-            
-            p.vx *= friction;
-            p.vy *= friction;
-
-            // 衝突判定
-            for (let j = i - 1; j >= 0; j--) {
-                const p_other = particles[j];
-                const dx = p.x - p_other.x;
-                const dy = p.y - p_other.y;
-                const distSq = dx*dx + dy*dy;
-                const minDist = p.radius + p_other.radius;
-                
-                if (distSq < minDist * minDist) {
-                    const distance = Math.sqrt(distSq);
-                    const overlap = minDist - distance;
-                    const norm_x = distance === 0 ? 1 : dx / distance; 
-                    const norm_y = distance === 0 ? 0 : dy / distance;
-                    const force = overlap * repulsionStrength * 0.5;
-                    p.vx += norm_x * force; p.vy += norm_y * force;
-                    p_other.vx -= norm_x * force;
-                    p_other.vy -= norm_y * force;
-                }
-            }
-
-            p.x += p.vx;
-            p.y += p.vy;
-
-            if (p.radius < p.maxRadius) {
-                p.radius += 0.15;
-            }
-
-            if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.5; }
-            if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
-            if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
-            if (p.y > particleCanvas.height - p.radius) { p.y = particleCanvas.height - p.radius; p.vy *= -0.5; }
-        }
-    }
-    
-    function drawParticles() {
-        for (let i = 0; i < particles.length; i++) {
-            drawOnParticle(particles[i]);
-        }
-    }
-
-    clearPermanentCanvas(); 
-    animate();
-});
+            if (
