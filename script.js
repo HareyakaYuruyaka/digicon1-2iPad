@@ -74,6 +74,85 @@ window.addEventListener('load', () => {
         clearPermanentCanvas();
     });
 
+    // --- 画像保存用UI要素 ---
+    const saveImageButton = document.getElementById('saveImageButton');
+    const saveOverlay = document.getElementById('saveOverlay');
+    const qrContainer = document.getElementById('qrContainer');
+    const fallbackArea = document.getElementById('fallbackArea');
+    const previewImage = document.getElementById('previewImage');
+    const downloadLink = document.getElementById('downloadLink');
+    const closeSaveOverlay = document.getElementById('closeSaveOverlay');
+
+    saveImageButton && saveImageButton.addEventListener('click', async () => {
+        openSaveOverlay();
+    });
+    closeSaveOverlay && closeSaveOverlay.addEventListener('click', () => closeSaveOverlayFunc());
+
+    function openSaveOverlay() {
+        if (!saveOverlay) return;
+        saveOverlay.setAttribute('aria-hidden', 'false');
+        // 画像を生成してQRまたはフォールバックを表示
+        try {
+            const dataURL = generateCombinedDataURL();
+
+            // QRコードに入れられる長さには制限があるため、まずは短めのサムネを試す
+            const MAX_QR_CHARS = 1400; // 安全な目安
+
+            // 小さめに圧縮したサムネイルを試す（幅320）
+            const thumbDataURL = generateCombinedDataURL(320, 0.7);
+            if (thumbDataURL.length <= MAX_QR_CHARS) {
+                // Google Charts API を使ってQR画像を生成
+                const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumbDataURL);
+                qrContainer.innerHTML = '';
+                const img = document.createElement('img');
+                img.src = api;
+                img.alt = 'QR code';
+                img.style.maxWidth = '100%';
+                qrContainer.appendChild(img);
+                qrContainer.style.display = '';
+                fallbackArea.style.display = 'none';
+            } else {
+                // QRに収まらない: フォールバックでフル画像とダウンロードリンクを表示
+                previewImage.src = dataURL;
+                downloadLink.href = dataURL;
+                qrContainer.style.display = 'none';
+                fallbackArea.style.display = '';
+            }
+        } catch (err) {
+            console.error('画像生成エラー:', err);
+            qrContainer.style.display = 'none';
+            fallbackArea.style.display = '';
+            previewImage.alt = '画像を生成できませんでした';
+        }
+    }
+
+    function closeSaveOverlayFunc() {
+        if (!saveOverlay) return;
+        saveOverlay.setAttribute('aria-hidden', 'true');
+        qrContainer.innerHTML = '';
+        previewImage.src = '';
+        downloadLink.href = '#';
+    }
+
+    // キャンバスを合成して dataURL を返す
+    // width: 出力幅（省略時はキャンバス幅）
+    // quality: JPEG品質（0-1）, 省略時は 0.92
+    function generateCombinedDataURL(width, quality) {
+        const w = width || permanentCanvas.width;
+        const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
+        const tmp = document.createElement('canvas');
+        tmp.width = w; tmp.height = h;
+        const ctx = tmp.getContext('2d');
+
+        // draw permanent then particle
+        // scale appropriately
+        ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
+        ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
+
+        const q = typeof quality === 'number' ? quality : 0.92;
+        return tmp.toDataURL('image/jpeg', q);
+    }
+
     // --- 関数 ---
     function setPourMode(mode) {
         isPourMode = mode;
