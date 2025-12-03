@@ -23,7 +23,7 @@ window.addEventListener('load', () => {
     let isPourMode = false;
 
     let tilt = { x: 0, y: 0 };
-    let isSensorActive = false; // センサーが有効かどうかのフラグ
+    let isSensorActive = false; 
 
     // --- 簡易デバッグボックス ---
     const __debugBox = document.createElement('div');
@@ -45,18 +45,16 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- シミュレーション定数 ---
-    const gravityStrength = 0.005; 
-    const friction = 0.90;         
+    // --- ★変更点: シミュレーション定数（スピードアップ） ---
+    const gravityStrength = 0.02;   // マウス用重力も強めに (0.005 -> 0.02)
+    const friction = 0.96;          // 摩擦を減らして滑りやすく (0.90 -> 0.96)
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
-    
-    // ★修正点1: ここを60に戻しました（最初は重力無視で広がる）
     const GRAVITY_GRACE_PERIOD = 60; 
 
-    // ★修正点2: 傾きの感度と強さの設定
-    const SENSOR_SENSITIVITY = 40;   // この角度(度)で最大速度になる
-    const SENSOR_FORCE_POWER = 1.0;  // 重力の強さ (0.5だと弱かったので1.0に強化)
+    // ★傾きの感度と強さ（さらに強化）
+    const SENSOR_SENSITIVITY = 30;   // 小さな傾きで反応するように (40 -> 30)
+    const SENSOR_FORCE_POWER = 3.0;  // 重力の強さを3倍に (1.0 -> 3.0)
 
     // --- イベントリスナー ---
     function getCanvasCoordinates(clientX, clientY) {
@@ -139,6 +137,36 @@ window.addEventListener('load', () => {
         updateDebugBox();
     });
 
+    // --- ★追加: 横向き固定（Landscape Lock）機能 ---
+    const orientationOverlay = document.createElement('div');
+    orientationOverlay.id = 'orientation-lock-overlay';
+    // スタイルを動的に設定
+    Object.assign(orientationOverlay.style, {
+        position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+        backgroundColor: '#000000', color: '#ffffff', zIndex: '99999',
+        display: 'none', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
+        textAlign: 'center', fontSize: '24px', fontWeight: 'bold'
+    });
+    orientationOverlay.innerHTML = `
+        <div style="font-size: 50px; margin-bottom: 20px;">📱</div>
+        <p>画面を横向きにしてください</p>
+        <p style="font-size: 14px; color: #aaa; margin-top: 10px;">Please rotate your device to landscape</p>
+    `;
+    document.body.appendChild(orientationOverlay);
+
+    function checkOrientation() {
+        // 幅と高さを比較して縦長なら警告を出す
+        if (window.innerHeight > window.innerWidth) {
+            orientationOverlay.style.display = 'flex';
+        } else {
+            orientationOverlay.style.display = 'none';
+        }
+    }
+    // 起動時とリサイズ（回転）時にチェック
+    window.addEventListener('resize', checkOrientation);
+    checkOrientation();
+
+
     // --- センサー制御関数 ---
     function startSensor() {
         if (typeof DeviceOrientationEvent !== 'undefined' && 
@@ -159,14 +187,12 @@ window.addEventListener('load', () => {
     }
 
     function handleOrientation(event) {
-        // 左右(gamma) と 前後(beta)
         let tx = event.gamma / SENSOR_SENSITIVITY; 
         let ty = event.beta / SENSOR_SENSITIVITY;  
 
         if (tx > 1) tx = 1; if (tx < -1) tx = -1;
         if (ty > 1) ty = 1; if (ty < -1) ty = -1;
 
-        // 値をセット (FORCE_POWERで強さを調整)
         tilt.x = tx * SENSOR_FORCE_POWER;
         tilt.y = ty * SENSOR_FORCE_POWER;
     }
@@ -331,7 +357,7 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        const AREA_PER_UNIT = 100; // 元の量
+        const AREA_PER_UNIT = 100; 
 
         let currentTotalArea = 0;
 
@@ -384,7 +410,7 @@ window.addEventListener('load', () => {
             maxRadius: Math.random() * 15 + 10, 
             age: 0,
             maxAge: MAX_AGE_FRAMES + Math.random() * 150,
-            gracePeriod: GRAVITY_GRACE_PERIOD // ここで60がセットされます
+            gracePeriod: GRAVITY_GRACE_PERIOD 
         };
     }
 
@@ -431,12 +457,10 @@ window.addEventListener('load', () => {
                 continue; 
             }
 
-            // 待ち時間(Grace Period)の処理
             if (p.gracePeriod > 0) {
                 p.gracePeriod--;
             }
 
-            // 待ち時間が終わったら重力適用
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
                     p.vx += tilt.x;
