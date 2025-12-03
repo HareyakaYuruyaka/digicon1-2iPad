@@ -23,7 +23,7 @@ window.addEventListener('load', () => {
     let isPourMode = false;
 
     let tilt = { x: 0, y: 0 };
-    let isSensorActive = false; 
+    let isSensorActive = false; // センサーが有効かどうかのフラグ
 
     // --- 簡易デバッグボックス ---
     const __debugBox = document.createElement('div');
@@ -45,18 +45,14 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- ★変更: ご指定のシミュレーション定数 ---
+    // --- ★変更: ご提示の定数に完全に戻しました ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
     const GRAVITY_GRACE_PERIOD = 0; 
 
-    // センサー用の定数（元の速度感に合わせて調整）
-    const SENSOR_SENSITIVITY = 40;   
-    const SENSOR_FORCE_POWER = 1.0;
-
-    // --- イベントリスナー ---
+    // --- イベントリスナー（座標計算はiPad用に補正版を使用） ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
         const scaleX = particleCanvas.width / rect.width;
@@ -74,6 +70,7 @@ window.addEventListener('load', () => {
         setPourMode(false);
     });
 
+    // iPadのタッチ対応
     particleCanvas.addEventListener('touchstart', (ev) => {
         if (!isPourMode) return;
         ev.preventDefault(); 
@@ -98,11 +95,11 @@ window.addEventListener('load', () => {
             const color = colorPicker.value;
             cupColors.push(color);
             updateCupVisual();
-            showToast('コップに追加: ' + cupColors.length + '色目');
             updateDebugBox();
         });
     }
 
+    // 簡易トースト表示
     function showToast(message, ms = 1200) {
         let t = document.getElementById('__toast');
         if (!t) {
@@ -120,7 +117,12 @@ window.addEventListener('load', () => {
     if (pourFromCupButton) {
         pourFromCupButton.addEventListener('click', () => {
             if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
-            if (!isSensorActive) startSensor();
+            
+            // センサー起動を試みる
+            if (!isSensorActive) {
+                startSensor();
+            }
+            
             setPourMode(true);
             showToast('キャンバスをタップして流してください');
             updateDebugBox();
@@ -163,35 +165,40 @@ window.addEventListener('load', () => {
     window.addEventListener('resize', checkOrientation);
     checkOrientation();
 
-
     // --- センサー制御関数 ---
     function startSensor() {
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
+            
             DeviceOrientationEvent.requestPermission()
                 .then(response => {
                     if (response === 'granted') {
                         isSensorActive = true;
                         window.addEventListener('deviceorientation', handleOrientation);
                         updateDebugBox();
+                        alert("傾き検知を有効にしました！");
                     }
                 })
                 .catch(e => console.error(e));
         } else {
+            // Android, PCなど
             isSensorActive = true;
             window.addEventListener('deviceorientation', handleOrientation);
         }
     }
 
+    // ★変更: 元のコードのロジックに戻しました（横持ち用の軸設定）
     function handleOrientation(event) {
-        let tx = event.gamma / SENSOR_SENSITIVITY; 
-        let ty = event.beta / SENSOR_SENSITIVITY;  
+        const sensitivity = 0.05; 
 
-        if (tx > 1) tx = 1; if (tx < -1) tx = -1;
-        if (ty > 1) ty = 1; if (ty < -1) ty = -1;
-
-        tilt.x = tx * SENSOR_FORCE_POWER;
-        tilt.y = ty * SENSOR_FORCE_POWER;
+        if (event.gamma !== null && event.beta !== null) {
+            // 横持ちの場合: 
+            // デバイスの前後(beta) -> 画面の左右(X)
+            // デバイスの左右(gamma) -> 画面の上下(Y)
+            
+            tilt.x = event.beta * sensitivity; 
+            tilt.y = -event.gamma * sensitivity;
+        }
     }
 
     // --- 画像保存・QR・共有まわり ---
@@ -353,6 +360,7 @@ window.addEventListener('load', () => {
         cupVisual.scrollTop = cupVisual.scrollHeight;
     }
 
+    // ★変更: 面積100、密度0.05に戻しました
     function pourFromCup(centerX, centerY) {
         const AREA_PER_UNIT = 100; 
 
@@ -458,6 +466,7 @@ window.addEventListener('load', () => {
                 p.gracePeriod--;
             }
 
+            // ★変更: センサー有効時はtiltをそのまま加算（元のコードと同じ挙動）
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
                     p.vx += tilt.x;
