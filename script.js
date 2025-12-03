@@ -83,16 +83,24 @@ window.addEventListener('load', () => {
         t._hideTimer = setTimeout(() => { t.classList.remove('show'); }, ms);
     }
     
-    pourFromCupButton.addEventListener('click', () => {
-        if (cupColors.length === 0) {
-            alert("コップに色がありません。"); return;
-        }
-        // ★追加: まだセンサーが有効でなければ許可を求める
-        if (!isSensorActive) {
-            startSensor();
-        }
-        setPourMode(true);
-    });
+    if (pourFromCupButton) {
+        pourFromCupButton.addEventListener('click', () => {
+            try {
+                if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
+                if (!isSensorActive) {
+                    try { startSensor(); } catch (e) { console.warn('startSensor error', e); }
+                }
+                setPourMode(true);
+                showToast('キャンバスをタップして流してください');
+                console.log('Pour mode enabled');
+            } catch (e) {
+                console.error('pourFromCupButton handler error', e);
+                alert('エラーが発生しました。コンソールを確認してください。');
+            }
+        });
+    } else {
+        console.warn('pourFromCupButton element not found at load time');
+    }
     
     resetButton.addEventListener('click', () => {
         particles = [];
