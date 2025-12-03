@@ -45,12 +45,12 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- シミュレーション定数 ---
+    // --- シミュレーション定数（元の設定に戻しました） ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
-    const GRAVITY_GRACE_PERIOD = 0; 
+    const GRAVITY_GRACE_PERIOD = 0; // iPad版の元ファイルの設定に準拠（即座に流れる）
 
     // --- イベントリスナー（座標計算にスケール補正を追加） ---
     function getCanvasCoordinates(clientX, clientY) {
@@ -74,7 +74,6 @@ window.addEventListener('load', () => {
     // タッチ対応
     particleCanvas.addEventListener('touchstart', (ev) => {
         if (!isPourMode) return;
-        // スクロール等を防ぐ
         ev.preventDefault(); 
         const touch = ev.touches && ev.touches[0];
         if (!touch) return;
@@ -142,9 +141,8 @@ window.addEventListener('load', () => {
         updateDebugBox();
     });
 
-    // --- ★追加: センサー制御関数 ---
+    // --- センサー制御関数 ---
     function startSensor() {
-        // iOS 13+ の権限リクエスト
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
             
@@ -154,30 +152,24 @@ window.addEventListener('load', () => {
                         isSensorActive = true;
                         window.addEventListener('deviceorientation', handleOrientation);
                         updateDebugBox();
-                    } else {
-                        console.warn('Sensor permission denied');
                     }
                 })
                 .catch(e => console.error(e));
         } else {
-            // Androidや古いiOS, PCなど
             isSensorActive = true;
             window.addEventListener('deviceorientation', handleOrientation);
         }
     }
 
     function handleOrientation(event) {
-        // 感度調整（値を大きくすると傾けなくても動きやすくなる）
         const sensitivity = 40; 
         
         let tx = event.gamma / sensitivity; // 左右
         let ty = event.beta / sensitivity;  // 前後
 
-        // 制限
         if (tx > 1) tx = 1; if (tx < -1) tx = -1;
         if (ty > 1) ty = 1; if (ty < -1) ty = -1;
 
-        // 加速度として渡すための係数
         const FORCE_MULTIPLIER = 0.5;
 
         tilt.x = tx * FORCE_MULTIPLIER;
@@ -185,7 +177,7 @@ window.addEventListener('load', () => {
     }
 
 
-    // --- 画像保存・QR・共有まわり（元のコードを維持） ---
+    // --- 画像保存・QR・共有まわり ---
     const saveImageButton = document.getElementById('saveImageButton');
     const saveOverlay = document.getElementById('saveOverlay');
     const qrContainer = document.getElementById('qrContainer');
@@ -348,8 +340,8 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        // ★変更: 1回の量を増やして見やすくする（元100 -> 400）
-        const AREA_PER_UNIT = 400; 
+        // ★元の設定に戻しました: 100
+        const AREA_PER_UNIT = 100; 
 
         let currentTotalArea = 0;
 
@@ -361,8 +353,8 @@ window.addEventListener('load', () => {
             const endR = Math.sqrt(endArea / Math.PI);
             
             const layerArea = endArea - startArea;
-            // 密度も少し上げる (0.05 -> 0.1)
-            const particleCount = Math.floor(layerArea * 0.1);
+            // ★元の設定に戻しました: 密度係数 0.05
+            const particleCount = Math.floor(layerArea * 0.05);
 
             for (let i = 0; i < particleCount; i++) {
                 const noise = (Math.random() - 0.5) * 10; 
@@ -386,7 +378,7 @@ window.addEventListener('load', () => {
             currentTotalArea = endArea;
         }
 
-        // ★追加: 流し終わったらコップを空にする
+        // コップを空にする修正はそのまま適用
         cupColors = [];
         updateCupVisual();
         updateDebugBox();
@@ -457,11 +449,9 @@ window.addEventListener('load', () => {
 
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
-                    // ★傾きで流れる（tilt.x, tilt.y は handleOrientation で更新）
                     p.vx += tilt.x;
                     p.vy += tilt.y;
                 } else {
-                    // ★センサーがない時はマウスへ（フォールバック）
                     const dx_mouse = mouse.x - p.x;
                     const dy_mouse = mouse.y - p.y;
                     p.vx += dx_mouse * gravityStrength;
