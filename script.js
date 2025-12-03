@@ -90,40 +90,68 @@ window.addEventListener('load', () => {
 
     function openSaveOverlay() {
         if (!saveOverlay) return;
+        // overlay は常に開いてプレビュー／ダウンロードUIを表示する
         saveOverlay.setAttribute('aria-hidden', 'false');
-        // 画像を生成してQRまたはフォールバックを表示
-        try {
-            const dataURL = generateCombinedDataURL();
+        qrContainer.style.display = 'none';
+        fallbackArea.style.display = '';
 
-            // QRコードに入れられる長さには制限があるため、まずは短めのサムネを試す
-            const MAX_QR_CHARS = 1400; // 安全な目安
+        // まずは合成画像を作る
+        const dataURL = generateCombinedDataURL();
 
-            // 小さめに圧縮したサムネイルを試す（幅320）
-            const thumbDataURL = generateCombinedDataURL(320, 0.7);
-            if (thumbDataURL.length <= MAX_QR_CHARS) {
-                // Google Charts API を使ってQR画像を生成
-                const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumbDataURL);
-                qrContainer.innerHTML = '';
-                const img = document.createElement('img');
-                img.src = api;
-                img.alt = 'QR code';
-                img.style.maxWidth = '100%';
-                qrContainer.appendChild(img);
-                qrContainer.style.display = '';
-                fallbackArea.style.display = 'none';
-            } else {
-                // QRに収まらない: フォールバックでフル画像とダウンロードリンクを表示
-                previewImage.src = dataURL;
-                downloadLink.href = dataURL;
-                qrContainer.style.display = 'none';
-                fallbackArea.style.display = '';
-            }
-        } catch (err) {
-            console.error('画像生成エラー:', err);
-            qrContainer.style.display = 'none';
-            fallbackArea.style.display = '';
-            previewImage.alt = '画像を生成できませんでした';
-        }
+        // ブラウザの共有APIが使える場合は直接共有を試みる（モバイルで自然な保存体験）
+        // ただし files を伴う共有はサポートが限定的
+        fetch(dataURL)
+            .then(res => res.blob())
+            .then(async (blob) => {
+                const file = new File([blob], 'pouring.png', { type: blob.type });
+
+                // Web Share API Level 2 (files) に対応しているか
+                if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+                    try {
+                        await navigator.share({ files: [file], title: 'My Pouring Art' });
+                        // 共有ダイアログが閉じたらオーバーレイを自動で閉じる
+                        closeSaveOverlayFunc();
+                        return;
+                    } catch (err) {
+                        // ユーザーがキャンセルした可能性。フォールバックUIを表示する。
+                        console.warn('共有失敗:', err);
+                    }
+                }
+
+                // 共有が使えない／失敗した場合は、新しいタブで開く（ユーザーは長押しで保存）
+                try {
+                    // 新しいタブで dataURL を開く（ユーザー操作中なのでポップアップブロックされにくい）
+                    const w = window.open();
+                    if (w) {
+                        w.document.write('<title>Pouring Art</title>');
+                        const img = w.document.createElement('img');
+                        img.src = dataURL;
+                        img.style.maxWidth = '100%';
+                        img.alt = 'Pouring Art';
+                        w.document.body.style.margin = '0';
+                        w.document.body.style.display = 'flex';
+                        w.document.body.style.justifyContent = 'center';
+                        w.document.body.style.alignItems = 'center';
+                        w.document.body.appendChild(img);
+                        // 併せてフォールバックUIにもセット
+                        previewImage.src = dataURL;
+                        downloadLink.href = dataURL;
+                    } else {
+                        // ポップアップが開けなければ overlay にプレビューとリンクを表示
+                        previewImage.src = dataURL;
+                        downloadLink.href = dataURL;
+                    }
+                } catch (err) {
+                    console.error('プレビュー表示エラー:', err);
+                    previewImage.alt = 'プレビューを表示できませんでした';
+                    downloadLink.href = dataURL;
+                }
+            })
+            .catch(err => {
+                console.error('画像ブロブ変換エラー:', err);
+                previewImage.alt = '画像を生成できませんでした';
+                downloadLink.href = '#';
+            });
     }
 
     function closeSaveOverlayFunc() {
