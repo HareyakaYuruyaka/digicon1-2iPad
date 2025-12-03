@@ -23,7 +23,7 @@ window.addEventListener('load', () => {
     let isPourMode = false;
 
     let tilt = { x: 0, y: 0 };
-    let isSensorActive = false; // センサーが有効かどうかのフラグ
+    let isSensorActive = false; 
 
     // --- 簡易デバッグボックス ---
     const __debugBox = document.createElement('div');
@@ -45,17 +45,16 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- シミュレーション定数（ご指定の値） ---
+    // --- シミュレーション定数 ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
     const GRAVITY_GRACE_PERIOD = 0; 
 
-    // --- イベントリスナー（iPad用に座標補正を追加） ---
+    // --- イベントリスナー ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
-        // 画面上の表示サイズと、キャンバスの実サイズの比率を計算
         const scaleX = particleCanvas.width / rect.width;
         const scaleY = particleCanvas.height / rect.height;
         return {
@@ -71,7 +70,6 @@ window.addEventListener('load', () => {
         setPourMode(false);
     });
 
-    // iPadのタッチ対応
     particleCanvas.addEventListener('touchstart', (ev) => {
         if (!isPourMode) return;
         ev.preventDefault(); 
@@ -100,7 +98,6 @@ window.addEventListener('load', () => {
         });
     }
 
-    // 簡易トースト表示
     function showToast(message, ms = 1200) {
         let t = document.getElementById('__toast');
         if (!t) {
@@ -118,11 +115,7 @@ window.addEventListener('load', () => {
     if (pourFromCupButton) {
         pourFromCupButton.addEventListener('click', () => {
             if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
-            
-            if (!isSensorActive) {
-                startSensor();
-            }
-            
+            if (!isSensorActive) startSensor();
             setPourMode(true);
             showToast('キャンバスをタップして流してください');
             updateDebugBox();
@@ -139,7 +132,7 @@ window.addEventListener('load', () => {
         updateDebugBox();
     });
 
-    // --- 横向き固定（Landscape Lock）機能 ---
+    // --- 横向き固定機能 ---
     const orientationOverlay = document.createElement('div');
     orientationOverlay.id = 'orientation-lock-overlay';
     Object.assign(orientationOverlay.style, {
@@ -169,7 +162,6 @@ window.addEventListener('load', () => {
     function startSensor() {
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
-            
             DeviceOrientationEvent.requestPermission()
                 .then(response => {
                     if (response === 'granted') {
@@ -235,33 +227,35 @@ window.addEventListener('load', () => {
     function shareCurrentImageToPhone() {
         const showStatus = saveOverlay && saveOverlay.getAttribute('aria-hidden') === 'false';
         if (showStatus) saveStatus.textContent = '共有を試みています...';
-
-        const dataURL = generateCombinedDataURL();
-        fetch(dataURL).then(r => r.blob()).then(async (blob) => {
-            const file = new File([blob], 'pouring.png', { type: blob.type });
-            if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-                try {
-                    await navigator.share({ files: [file], title: 'Pouring Art' });
-                    if (showStatus) {
-                        saveStatus.textContent = '共有しました。';
-                        closeSaveOverlayFunc();
+        // 遅延を入れてUI更新を確実にする
+        setTimeout(() => {
+            const dataURL = generateCombinedDataURL();
+            fetch(dataURL).then(r => r.blob()).then(async (blob) => {
+                const file = new File([blob], 'pouring.png', { type: blob.type });
+                if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+                    try {
+                        await navigator.share({ files: [file], title: 'Pouring Art' });
+                        if (showStatus) {
+                            saveStatus.textContent = '共有しました。';
+                            closeSaveOverlayFunc();
+                        }
+                    } catch (err) {
+                        if (showStatus) saveStatus.textContent = '共有がキャンセルされました。';
                     }
-                } catch (err) {
-                    if (showStatus) saveStatus.textContent = '共有がキャンセルされました。';
+                } else {
+                    if (showStatus) saveStatus.textContent = 'このブラウザは共有機能未対応です。';
+                    try {
+                        previewImage.src = dataURL;
+                        downloadLink.href = dataURL;
+                        if (saveOverlay) {
+                            saveOverlay.setAttribute('aria-hidden', 'false');
+                            qrContainer.style.display = 'none';
+                            fallbackArea.style.display = '';
+                        }
+                    } catch (err) { console.error(err); }
                 }
-            } else {
-                if (showStatus) saveStatus.textContent = 'このブラウザは共有機能未対応です。';
-                try {
-                    previewImage.src = dataURL;
-                    downloadLink.href = dataURL;
-                    if (saveOverlay) {
-                        saveOverlay.setAttribute('aria-hidden', 'false');
-                        qrContainer.style.display = 'none';
-                        fallbackArea.style.display = '';
-                    }
-                } catch (err) { console.error(err); }
-            }
-        }).catch(err => { console.error(err); });
+            }).catch(err => { console.error(err); });
+        }, 50);
     }
 
     function attemptGenerateQRWithRetries() {
@@ -271,35 +265,37 @@ window.addEventListener('load', () => {
         const widths = [320, 240, 200];
         const qualities = [0.7, 0.5, 0.3];
 
-        (async () => {
-            let found = false;
-            for (let w of widths) {
-                for (let q of qualities) {
-                    const thumb = generateCombinedDataURL(w, q, 'image/jpeg');
-                    if (thumb.length <= MAX_QR_CHARS) {
-                        const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumb);
-                        qrContainer.innerHTML = '';
-                        const img = document.createElement('img');
-                        img.src = api;
-                        img.style.maxWidth = '100%';
-                        qrContainer.appendChild(img);
-                        qrContainer.style.display = '';
-                        fallbackArea.style.display = 'none';
-                        saveStatus.textContent = `QR生成成功`;
-                        found = true;
-                        return;
+        setTimeout(() => {
+            (async () => {
+                let found = false;
+                for (let w of widths) {
+                    for (let q of qualities) {
+                        const thumb = generateCombinedDataURL(w, q, 'image/jpeg');
+                        if (thumb.length <= MAX_QR_CHARS) {
+                            const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumb);
+                            qrContainer.innerHTML = '';
+                            const img = document.createElement('img');
+                            img.src = api;
+                            img.style.maxWidth = '100%';
+                            qrContainer.appendChild(img);
+                            qrContainer.style.display = '';
+                            fallbackArea.style.display = 'none';
+                            saveStatus.textContent = `QR生成成功`;
+                            found = true;
+                            return;
+                        }
                     }
                 }
-            }
-            if (!found) {
-                saveStatus.textContent = '画像が大きすぎるためQR表示できません。直接ダウンロードしてください。';
-                const full = generateCombinedDataURL();
-                previewImage.src = full;
-                downloadLink.href = full;
-                qrContainer.style.display = 'none';
-                fallbackArea.style.display = '';
-            }
-        })();
+                if (!found) {
+                    saveStatus.textContent = '画像が大きすぎるためQR表示できません。直接ダウンロードしてください。';
+                    const full = generateCombinedDataURL();
+                    previewImage.src = full;
+                    downloadLink.href = full;
+                    qrContainer.style.display = 'none';
+                    fallbackArea.style.display = '';
+                }
+            })();
+        }, 50);
     }
 
     function closeSaveOverlayFunc() {
@@ -309,43 +305,112 @@ window.addEventListener('load', () => {
         previewImage.src = '';
     }
 
-    // ★重要修正: 画像保存時にも「とろっとした効果」を適用する
+    // --- ★重要: 手動画像処理（ぼかし＆コントラスト） ---
+    // ブラウザのフィルタ機能に依存せず、ピクセル操作で「とろっとした効果」を再現します
     function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
         
-        // 1. 中間レイヤー（透明）を作成
-        const gooeyCanvas = document.createElement('canvas');
-        gooeyCanvas.width = w; 
-        gooeyCanvas.height = h;
-        const gCtx = gooeyCanvas.getContext('2d');
+        // 作業用キャンバス（透明）
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = w; tempCanvas.height = h;
+        const tCtx = tempCanvas.getContext('2d');
+        
+        // 描画（元のキャンバスをリサイズして描画）
+        tCtx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
+        tCtx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
 
-        // 2. 透明なレイヤーに対してフィルター（ぼかし+コントラスト）をかけて描画
-        // 白背景の上ではなく、透明の上で計算させることでアルファチャンネルによる結合が起きる
-        gCtx.save();
-        if (gCtx.filter !== undefined) {
-            gCtx.filter = 'blur(10px) contrast(20)';
-        }
-        gCtx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
-        gCtx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
-        gCtx.restore();
+        // ピクセルデータを取得
+        const imageData = tCtx.getImageData(0, 0, w, h);
+        
+        // 1. ぼかし処理（Box Blur 2回掛けでガウシアン近似）
+        // 半径10px相当のぼかし
+        fastBlur(imageData, 10); 
+        fastBlur(imageData, 10);
 
-        // 3. 最終出力用キャンバス（白背景）を作成
+        // 2. コントラスト処理（しきい値処理）
+        // アルファ値（不透明度）を極端に操作して、ぼけた境界をくっきりさせる
+        applyHardContrast(imageData);
+
+        // 処理後のデータを戻す
+        tCtx.putImageData(imageData, 0, 0);
+
+        // 最終出力用（白背景と合成）
         const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = w;
-        finalCanvas.height = h;
+        finalCanvas.width = w; finalCanvas.height = h;
         const fCtx = finalCanvas.getContext('2d');
-
-        // 白で塗りつぶし
+        
         fCtx.fillStyle = '#ffffff';
         fCtx.fillRect(0, 0, w, h);
-
-        // とろっとさせたレイヤーを重ねる
-        fCtx.drawImage(gooeyCanvas, 0, 0);
+        fCtx.drawImage(tempCanvas, 0, 0);
 
         const mt = mimeType || 'image/png';
         if (mt === 'image/jpeg') { return finalCanvas.toDataURL('image/jpeg', quality || 0.7); }
         return finalCanvas.toDataURL('image/png');
+    }
+
+    // --- 画像処理用ヘルパー関数 ---
+    
+    // 簡易コントラスト（メタボール効果用）
+    function applyHardContrast(imageData) {
+        const data = imageData.data;
+        // contrast(20) は標準の20倍のコントラスト。
+        // アルファチャンネルに対して強烈なカーブを適用する
+        for (let i = 0; i < data.length; i += 4) {
+            const a = data[i + 3]; // Alpha
+            if (a < 10) {
+                data[i + 3] = 0; // 完全に消す
+            } else {
+                // しきい値を超えたら一気に不透明に近づける
+                let newAlpha = (a - 100) * 20 + 128;
+                if (newAlpha < 0) newAlpha = 0;
+                if (newAlpha > 255) newAlpha = 255;
+                data[i + 3] = newAlpha;
+            }
+        }
+    }
+
+    // 高速ボックスぼかし (簡易実装)
+    function fastBlur(imageData, radius) {
+        if (isNaN(radius) || radius < 1) return;
+        const width = imageData.width;
+        const height = imageData.height;
+        const data = imageData.data;
+
+        // 横方向
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let r = 0, g = 0, b = 0, a = 0;
+                let count = 0;
+                for (let i = -radius; i <= radius; i += 2) { // 間引いて高速化
+                    const nx = x + i;
+                    if (nx >= 0 && nx < width) {
+                        const idx = (y * width + nx) * 4;
+                        r += data[idx]; g += data[idx+1]; b += data[idx+2]; a += data[idx+3];
+                        count++;
+                    }
+                }
+                const idx = (y * width + x) * 4;
+                data[idx] = r/count; data[idx+1] = g/count; data[idx+2] = b/count; data[idx+3] = a/count;
+            }
+        }
+        // 縦方向
+        for (let x = 0; x < width; x++) {
+            for (let y = 0; y < height; y++) {
+                let r = 0, g = 0, b = 0, a = 0;
+                let count = 0;
+                for (let i = -radius; i <= radius; i += 2) {
+                    const ny = y + i;
+                    if (ny >= 0 && ny < height) {
+                        const idx = (ny * width + x) * 4;
+                        r += data[idx]; g += data[idx+1]; b += data[idx+2]; a += data[idx+3];
+                        count++;
+                    }
+                }
+                const idx = (y * width + x) * 4;
+                data[idx] = r/count; data[idx+1] = g/count; data[idx+2] = b/count; data[idx+3] = a/count;
+            }
+        }
     }
 
     // --- 関数 ---
@@ -376,7 +441,6 @@ window.addEventListener('load', () => {
 
     function pourFromCup(centerX, centerY) {
         const AREA_PER_UNIT = 100; 
-
         let currentTotalArea = 0;
 
         for (const color of cupColors) {
@@ -466,19 +530,15 @@ window.addEventListener('load', () => {
     function updateParticles() {
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
-            
             drawOnPermanent(p);
-
             p.age++;
             if (p.age > p.maxAge) {
                 particles.splice(i, 1);
                 continue; 
             }
-
             if (p.gracePeriod > 0) {
                 p.gracePeriod--;
             }
-
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
                     p.vx += tilt.x;
@@ -490,18 +550,14 @@ window.addEventListener('load', () => {
                     p.vy += dy_mouse * gravityStrength;
                 }
             }
-            
             p.vx *= friction;
             p.vy *= friction;
-
-            // 衝突判定
             for (let j = i - 1; j >= 0; j--) {
                 const p_other = particles[j];
                 const dx = p.x - p_other.x;
                 const dy = p.y - p_other.y;
                 const distSq = dx*dx + dy*dy;
                 const minDist = p.radius + p_other.radius;
-                
                 if (distSq < minDist * minDist) {
                     const distance = Math.sqrt(distSq);
                     const overlap = minDist - distance;
@@ -513,14 +569,9 @@ window.addEventListener('load', () => {
                     p_other.vy -= norm_y * force;
                 }
             }
-
             p.x += p.vx;
             p.y += p.vy;
-
-            if (p.radius < p.maxRadius) {
-                p.radius += 0.15;
-            }
-
+            if (p.radius < p.maxRadius) { p.radius += 0.15; }
             if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.5; }
             if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
             if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
