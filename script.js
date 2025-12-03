@@ -48,11 +48,40 @@ window.addEventListener('load', () => {
     });
 
     // --- UIボタン ---
-    addToCupButton.addEventListener('click', () => {
-        const color = colorPicker.value;
-        cupColors.push(color);
-        updateCupVisual();
-    });
+    // addToCupButton に安全なハンドラを登録（例外が起きても他処理に影響しないように）
+    if (addToCupButton) {
+        addToCupButton.addEventListener('click', () => {
+            try {
+                if (!colorPicker) { console.error('colorPicker not found'); return; }
+                const color = colorPicker.value;
+                if (!color) { console.warn('no color selected'); }
+                cupColors.push(color);
+                updateCupVisual();
+                console.log('Added to cup:', color, 'cupColors length=', cupColors.length);
+                showToast('コップに色を追加しました');
+            } catch (e) {
+                console.error('addToCupButton handler error', e);
+                alert('エラーが発生しました。ブラウザのコンソールを確認してください。');
+            }
+        });
+    } else {
+        console.warn('addToCupButton element not found at load time');
+    }
+
+    // 簡易トースト表示
+    function showToast(message, ms = 1200) {
+        let t = document.getElementById('__toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = '__toast';
+            t.className = 'toast';
+            document.body.appendChild(t);
+        }
+        t.textContent = message;
+        t.classList.add('show');
+        clearTimeout(t._hideTimer);
+        t._hideTimer = setTimeout(() => { t.classList.remove('show'); }, ms);
+    }
     
     pourFromCupButton.addEventListener('click', () => {
         if (cupColors.length === 0) {
@@ -379,57 +408,8 @@ window.addEventListener('load', () => {
             }
 
             // 次のループのために総面積を更新
-                // We'll parse blur(px) and contrast(...) and apply approximate processing on the offscreen canvas.
-                let blurPx = 0; let contrastVal = 1;
-                const blurMatch = /blur\((\d+(?:\.\d+)?)px\)/.exec(filterValue);
-                if (blurMatch) blurPx = Math.max(0, Math.floor(parseFloat(blurMatch[1])));
-                const contrastMatch = /contrast\(([^)]+)\)/.exec(filterValue);
-                if (contrastMatch) {
-                    let raw = contrastMatch[1].trim();
-                    if (raw.endsWith('%')) { contrastVal = parseFloat(raw) / 100; }
-                    else contrastVal = parseFloat(raw);
-                    if (!isFinite(contrastVal) || contrastVal <= 0) contrastVal = 1;
-                }
-
-                // Draw base images without relying on ctx.filter
-                ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
-                ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
-
-                // Apply approximate blur by drawing multiple offset copies (simple box blur approximation)
-                if (blurPx > 0) {
-                    const r = Math.min(12, Math.max(1, Math.round(blurPx * (w / permanentCanvas.width))));
-                    const src = document.createElement('canvas'); src.width = w; src.height = h; const sctx = src.getContext('2d'); sctx.drawImage(tmp,0,0);
-                    ctx.clearRect(0,0,w,h);
-                    const samples = Math.min(7, 1 + Math.floor(r/2));
-                    const half = Math.floor(samples/2);
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.globalAlpha = 1 / (samples * samples);
-                    for (let dy = -half; dy <= half; dy++) {
-                        for (let dx = -half; dx <= half; dx++) {
-                            ctx.drawImage(src, dx, dy, w, h);
-                        }
-                    }
-                    ctx.globalAlpha = 1;
-                }
-
-                // Apply contrast adjustment if needed
-                if (contrastVal && Math.abs(contrastVal - 1) > 0.001) {
-                    try {
-                        const img = ctx.getImageData(0,0,w,h);
-                        const data = img.data; const c = contrastVal;
-                        for (let i=0;i<data.length;i+=4) {
-                            for (let ch=0; ch<3; ch++) {
-                                let v = data[i+ch]; let nv = (v - 128) * c + 128;
-                                data[i+ch] = nv < 0 ? 0 : nv > 255 ? 255 : nv;
-                            }
-                        }
-                        ctx.putImageData(img,0,0);
-                    } catch(e) { console.warn('contrast apply failed', e); }
-                }
-
-                const mt = mimeType || 'image/png';
-                if (mt === 'image/jpeg') { const q = typeof quality === 'number' ? quality : 0.7; return tmp.toDataURL('image/jpeg', q); }
-                return tmp.toDataURL('image/png');
+            currentTotalArea = endArea;
+        }
     }
 
     function drawOnParticle(p) {
