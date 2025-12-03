@@ -45,17 +45,22 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- シミュレーション定数（元の設定に戻しました） ---
+    // --- シミュレーション定数 ---
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
-    const GRAVITY_GRACE_PERIOD = 0; // iPad版の元ファイルの設定に準拠（即座に流れる）
+    
+    // ★修正点1: ここを60に戻しました（最初は重力無視で広がる）
+    const GRAVITY_GRACE_PERIOD = 60; 
 
-    // --- イベントリスナー（座標計算にスケール補正を追加） ---
+    // ★修正点2: 傾きの感度と強さの設定
+    const SENSOR_SENSITIVITY = 40;   // この角度(度)で最大速度になる
+    const SENSOR_FORCE_POWER = 1.0;  // 重力の強さ (0.5だと弱かったので1.0に強化)
+
+    // --- イベントリスナー ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
-        // 表示サイズと実サイズの比率を計算
         const scaleX = particleCanvas.width / rect.width;
         const scaleY = particleCanvas.height / rect.height;
         return {
@@ -71,7 +76,6 @@ window.addEventListener('load', () => {
         setPourMode(false);
     });
 
-    // タッチ対応
     particleCanvas.addEventListener('touchstart', (ev) => {
         if (!isPourMode) return;
         ev.preventDefault(); 
@@ -101,7 +105,6 @@ window.addEventListener('load', () => {
         });
     }
 
-    // 簡易トースト表示
     function showToast(message, ms = 1200) {
         let t = document.getElementById('__toast');
         if (!t) {
@@ -119,12 +122,7 @@ window.addEventListener('load', () => {
     if (pourFromCupButton) {
         pourFromCupButton.addEventListener('click', () => {
             if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
-            
-            // センサー起動を試みる（未起動の場合のみ）
-            if (!isSensorActive) {
-                startSensor();
-            }
-            
+            if (!isSensorActive) startSensor();
             setPourMode(true);
             showToast('キャンバスをタップして流してください');
             updateDebugBox();
@@ -145,7 +143,6 @@ window.addEventListener('load', () => {
     function startSensor() {
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
-            
             DeviceOrientationEvent.requestPermission()
                 .then(response => {
                     if (response === 'granted') {
@@ -162,20 +159,17 @@ window.addEventListener('load', () => {
     }
 
     function handleOrientation(event) {
-        const sensitivity = 40; 
-        
-        let tx = event.gamma / sensitivity; // 左右
-        let ty = event.beta / sensitivity;  // 前後
+        // 左右(gamma) と 前後(beta)
+        let tx = event.gamma / SENSOR_SENSITIVITY; 
+        let ty = event.beta / SENSOR_SENSITIVITY;  
 
         if (tx > 1) tx = 1; if (tx < -1) tx = -1;
         if (ty > 1) ty = 1; if (ty < -1) ty = -1;
 
-        const FORCE_MULTIPLIER = 0.5;
-
-        tilt.x = tx * FORCE_MULTIPLIER;
-        tilt.y = ty * FORCE_MULTIPLIER;
+        // 値をセット (FORCE_POWERで強さを調整)
+        tilt.x = tx * SENSOR_FORCE_POWER;
+        tilt.y = ty * SENSOR_FORCE_POWER;
     }
-
 
     // --- 画像保存・QR・共有まわり ---
     const saveImageButton = document.getElementById('saveImageButton');
@@ -206,7 +200,6 @@ window.addEventListener('load', () => {
         saveOverlay.setAttribute('aria-hidden', 'false');
         qrContainer.style.display = 'none';
         fallbackArea.style.display = '';
-        const dataURL = generateCombinedDataURL();
         shareCurrentImageToPhone();
         attemptGenerateQRWithRetries();
         if (airdropHint) {
@@ -300,11 +293,9 @@ window.addEventListener('load', () => {
         tmp.width = w; tmp.height = h;
         const ctx = tmp.getContext('2d');
 
-        // Draw background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0,0,w,h);
 
-        // Draw canvases
         ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
         ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
 
@@ -340,8 +331,7 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        // ★元の設定に戻しました: 100
-        const AREA_PER_UNIT = 100; 
+        const AREA_PER_UNIT = 100; // 元の量
 
         let currentTotalArea = 0;
 
@@ -353,7 +343,6 @@ window.addEventListener('load', () => {
             const endR = Math.sqrt(endArea / Math.PI);
             
             const layerArea = endArea - startArea;
-            // ★元の設定に戻しました: 密度係数 0.05
             const particleCount = Math.floor(layerArea * 0.05);
 
             for (let i = 0; i < particleCount; i++) {
@@ -378,7 +367,6 @@ window.addEventListener('load', () => {
             currentTotalArea = endArea;
         }
 
-        // コップを空にする修正はそのまま適用
         cupColors = [];
         updateCupVisual();
         updateDebugBox();
@@ -396,7 +384,7 @@ window.addEventListener('load', () => {
             maxRadius: Math.random() * 15 + 10, 
             age: 0,
             maxAge: MAX_AGE_FRAMES + Math.random() * 150,
-            gracePeriod: GRAVITY_GRACE_PERIOD 
+            gracePeriod: GRAVITY_GRACE_PERIOD // ここで60がセットされます
         };
     }
 
@@ -443,10 +431,12 @@ window.addEventListener('load', () => {
                 continue; 
             }
 
+            // 待ち時間(Grace Period)の処理
             if (p.gracePeriod > 0) {
                 p.gracePeriod--;
             }
 
+            // 待ち時間が終わったら重力適用
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
                     p.vx += tilt.x;
@@ -489,7 +479,6 @@ window.addEventListener('load', () => {
                 p.radius += 0.15;
             }
 
-            // 壁判定
             if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.5; }
             if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
             if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
