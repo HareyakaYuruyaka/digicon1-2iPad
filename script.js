@@ -45,16 +45,20 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- ★変更点: シミュレーション定数（スピードアップ） ---
-    const gravityStrength = 0.02;   // マウス用重力も強めに (0.005 -> 0.02)
-    const friction = 0.96;          // 摩擦を減らして滑りやすく (0.90 -> 0.96)
+    // --- ★変更点: 設定値の調整 ---
+    // 重力の影響を0に (0.005 -> 0)
+    const gravityStrength = 0;      
+    
+    // スピード（摩擦）を前に戻す (0.96 -> 0.90)
+    const friction = 0.90;          
+    
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
     const GRAVITY_GRACE_PERIOD = 60; 
 
-    // ★傾きの感度と強さ（さらに強化）
-    const SENSOR_SENSITIVITY = 30;   // 小さな傾きで反応するように (40 -> 30)
-    const SENSOR_FORCE_POWER = 3.0;  // 重力の強さを3倍に (1.0 -> 3.0)
+    // 傾きの感度と強さを前に戻す
+    const SENSOR_SENSITIVITY = 40;   // (30 -> 40)
+    const SENSOR_FORCE_POWER = 1.0;  // (3.0 -> 1.0)
 
     // --- イベントリスナー ---
     function getCanvasCoordinates(clientX, clientY) {
@@ -137,10 +141,9 @@ window.addEventListener('load', () => {
         updateDebugBox();
     });
 
-    // --- ★追加: 横向き固定（Landscape Lock）機能 ---
+    // --- 横向き固定（Landscape Lock）機能 ---
     const orientationOverlay = document.createElement('div');
     orientationOverlay.id = 'orientation-lock-overlay';
-    // スタイルを動的に設定
     Object.assign(orientationOverlay.style, {
         position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
         backgroundColor: '#000000', color: '#ffffff', zIndex: '99999',
@@ -155,14 +158,12 @@ window.addEventListener('load', () => {
     document.body.appendChild(orientationOverlay);
 
     function checkOrientation() {
-        // 幅と高さを比較して縦長なら警告を出す
         if (window.innerHeight > window.innerWidth) {
             orientationOverlay.style.display = 'flex';
         } else {
             orientationOverlay.style.display = 'none';
         }
     }
-    // 起動時とリサイズ（回転）時にチェック
     window.addEventListener('resize', checkOrientation);
     checkOrientation();
 
