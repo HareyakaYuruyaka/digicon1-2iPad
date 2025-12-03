@@ -25,7 +25,7 @@ window.addEventListener('load', () => {
     let tilt = { x: 0, y: 0 };
     let isSensorActive = false; // センサーが有効かどうかのフラグ
 
-    // --- 簡易デバッグボックス（端末での診断用） ---
+    // --- 簡易デバッグボックス ---
     const __debugBox = document.createElement('div');
     __debugBox.id = '__debugBox';
     __debugBox.style.position = 'fixed';
@@ -42,7 +42,7 @@ window.addEventListener('load', () => {
     document.body.appendChild(__debugBox);
 
     function updateDebugBox() {
-        __debugBox.textContent = `pourMode=${isPourMode} colors=${cupColors.length} particles=${particles.length}`;
+        __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
     // --- シミュレーション定数 ---
@@ -52,57 +52,54 @@ window.addEventListener('load', () => {
     const MAX_AGE_FRAMES = 120; 
     const GRAVITY_GRACE_PERIOD = 0; 
 
-    // --- イベントリスナー ---
-    particleCanvas.addEventListener('click', (event) => {
-        console.log('particleCanvas click event, isPourMode=', isPourMode);
-        updateDebugBox();
-        if (!isPourMode) return;
+    // --- イベントリスナー（座標計算にスケール補正を追加） ---
+    function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        pourFromCup(x, y);
+        // 表示サイズと実サイズの比率を計算
+        const scaleX = particleCanvas.width / rect.width;
+        const scaleY = particleCanvas.height / rect.height;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    particleCanvas.addEventListener('click', (event) => {
+        if (!isPourMode) return;
+        const pos = getCanvasCoordinates(event.clientX, event.clientY);
+        pourFromCup(pos.x, pos.y);
         setPourMode(false);
     });
-    // touchstart をサポート（iPadなどのタッチイベントで click が発火しない場合のフォールバック）
+
+    // タッチ対応
     particleCanvas.addEventListener('touchstart', (ev) => {
-        ev.preventDefault();
-        updateDebugBox();
-        console.log('particleCanvas touchstart event, isPourMode=', isPourMode);
         if (!isPourMode) return;
+        // スクロール等を防ぐ
+        ev.preventDefault(); 
         const touch = ev.touches && ev.touches[0];
         if (!touch) return;
-        const rect = particleCanvas.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        pourFromCup(x, y);
+        
+        const pos = getCanvasCoordinates(touch.clientX, touch.clientY);
+        pourFromCup(pos.x, pos.y);
         setPourMode(false);
     }, { passive: false });
+
     particleCanvas.addEventListener('mousemove', (event) => {
-        const rect = particleCanvas.getBoundingClientRect();
-        mouse.x = event.clientX - rect.left;
-        mouse.y = event.clientY - rect.top;
+        const pos = getCanvasCoordinates(event.clientX, event.clientY);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
     });
 
     // --- UIボタン ---
-    // addToCupButton に安全なハンドラを登録（例外が起きても他処理に影響しないように）
     if (addToCupButton) {
         addToCupButton.addEventListener('click', () => {
-            try {
-                if (!colorPicker) { console.error('colorPicker not found'); return; }
-                const color = colorPicker.value;
-                if (!color) { console.warn('no color selected'); }
-                cupColors.push(color);
-                updateCupVisual();
-                console.log('Added to cup:', color, 'cupColors length=', cupColors.length);
-                showToast('コップに色を追加しました');
-                updateDebugBox();
-            } catch (e) {
-                console.error('addToCupButton handler error', e);
-                alert('エラーが発生しました。ブラウザのコンソールを確認してください。');
-            }
+            if (!colorPicker) return;
+            const color = colorPicker.value;
+            cupColors.push(color);
+            updateCupVisual();
+            showToast('コップに追加: ' + cupColors.length + '色目');
+            updateDebugBox();
         });
-    } else {
-        console.warn('addToCupButton element not found at load time');
     }
 
     // 簡易トースト表示
@@ -122,24 +119,17 @@ window.addEventListener('load', () => {
     
     if (pourFromCupButton) {
         pourFromCupButton.addEventListener('click', () => {
-            try {
-                if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
-                    console.log('pourFromCupButton clicked, cupColors=', cupColors.length);
-                    updateDebugBox();
-                if (!isSensorActive) {
-                    try { startSensor(); } catch (e) { console.warn('startSensor error', e); }
-                }
-                setPourMode(true);
-                showToast('キャンバスをタップして流してください');
-                console.log('Pour mode enabled');
-                updateDebugBox();
-            } catch (e) {
-                console.error('pourFromCupButton handler error', e);
-                alert('エラーが発生しました。コンソールを確認してください。');
+            if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
+            
+            // センサー起動を試みる（未起動の場合のみ）
+            if (!isSensorActive) {
+                startSensor();
             }
+            
+            setPourMode(true);
+            showToast('キャンバスをタップして流してください');
+            updateDebugBox();
         });
-    } else {
-        console.warn('pourFromCupButton element not found at load time');
     }
     
     resetButton.addEventListener('click', () => {
@@ -149,9 +139,53 @@ window.addEventListener('load', () => {
         setPourMode(false);
         clearParticleCanvas();
         clearPermanentCanvas();
+        updateDebugBox();
     });
 
-    // --- 画像保存用UI要素 ---
+    // --- ★追加: センサー制御関数 ---
+    function startSensor() {
+        // iOS 13+ の権限リクエスト
+        if (typeof DeviceOrientationEvent !== 'undefined' && 
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+            
+            DeviceOrientationEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        isSensorActive = true;
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        updateDebugBox();
+                    } else {
+                        console.warn('Sensor permission denied');
+                    }
+                })
+                .catch(e => console.error(e));
+        } else {
+            // Androidや古いiOS, PCなど
+            isSensorActive = true;
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+    }
+
+    function handleOrientation(event) {
+        // 感度調整（値を大きくすると傾けなくても動きやすくなる）
+        const sensitivity = 40; 
+        
+        let tx = event.gamma / sensitivity; // 左右
+        let ty = event.beta / sensitivity;  // 前後
+
+        // 制限
+        if (tx > 1) tx = 1; if (tx < -1) tx = -1;
+        if (ty > 1) ty = 1; if (ty < -1) ty = -1;
+
+        // 加速度として渡すための係数
+        const FORCE_MULTIPLIER = 0.5;
+
+        tilt.x = tx * FORCE_MULTIPLIER;
+        tilt.y = ty * FORCE_MULTIPLIER;
+    }
+
+
+    // --- 画像保存・QR・共有まわり（元のコードを維持） ---
     const saveImageButton = document.getElementById('saveImageButton');
     const saveOverlay = document.getElementById('saveOverlay');
     const qrContainer = document.getElementById('qrContainer');
@@ -165,12 +199,10 @@ window.addEventListener('load', () => {
     const airdropHint = document.getElementById('airdropHint');
 
     saveImageButton && saveImageButton.addEventListener('click', async () => {
-        // 直接共有フローを開始（QRやオーバーレイは表示しない）
         shareCurrentImageToPhone();
     });
     closeSaveOverlay && closeSaveOverlay.addEventListener('click', () => closeSaveOverlayFunc());
     shareToPhoneButton && shareToPhoneButton.addEventListener('click', () => {
-        // re-run share flow explicitly
         shareCurrentImageToPhone();
     });
     regenQrButton && regenQrButton.addEventListener('click', () => {
@@ -179,34 +211,22 @@ window.addEventListener('load', () => {
 
     function openSaveOverlay() {
         if (!saveOverlay) return;
-        // overlay は常に開いてプレビュー／ダウンロードUIを表示する
         saveOverlay.setAttribute('aria-hidden', 'false');
         qrContainer.style.display = 'none';
         fallbackArea.style.display = '';
-
-        // まずは合成画像を作る
         const dataURL = generateCombinedDataURL();
-
-        // まずは共有を試し、無理なら QR を作れるか段階的に試す
         shareCurrentImageToPhone();
         attemptGenerateQRWithRetries();
-
-        // AirDrop案内をハイライト（再表示ごとにアニメを起動）
         if (airdropHint) {
             airdropHint.classList.remove('highlight');
-            // reflow 強制
             void airdropHint.offsetWidth;
             airdropHint.classList.add('highlight');
-            const onAnimEnd = () => { airdropHint.classList.remove('highlight'); airdropHint.removeEventListener('animationend', onAnimEnd); };
-            airdropHint.addEventListener('animationend', onAnimEnd);
         }
     }
 
-    // Try to share current image via Web Share API (files) if available
     function shareCurrentImageToPhone() {
-        // 共有処理は UI がオーバーレイで開かれている場合のみ状態表示を行う
         const showStatus = saveOverlay && saveOverlay.getAttribute('aria-hidden') === 'false';
-        if (showStatus) saveStatus.textContent = '共有を試みています...（近くのスマホへ送信できます）';
+        if (showStatus) saveStatus.textContent = '共有を試みています...';
 
         const dataURL = generateCombinedDataURL();
         fetch(dataURL).then(r => r.blob()).then(async (blob) => {
@@ -214,57 +234,34 @@ window.addEventListener('load', () => {
             if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
                 try {
                     await navigator.share({ files: [file], title: 'Pouring Art' });
-                    if (showStatus) saveStatus.textContent = '共有しました。スマホで確認してください。';
-                    // クローズはオーバーレイを開いている場合のみ行う
-                    if (showStatus) closeSaveOverlayFunc();
-                    return;
-                } catch (err) {
-                    console.warn('共有がキャンセルまたは失敗:', err);
-                    if (showStatus) saveStatus.textContent = '共有操作がキャンセルされました。';
-                }
-            } else {
-                if (showStatus) saveStatus.textContent = 'デバイスの共有機能が使えません。フォールバックを試します。';
-                // フォールバック: 新しいタブで画像を開く（ユーザが長押しで保存可能）
-                try {
-                    const w = window.open();
-                    if (w) {
-                        w.document.write('<title>Pouring Art</title>');
-                        const img = w.document.createElement('img');
-                        img.src = dataURL;
-                        img.style.maxWidth = '100%';
-                        img.alt = 'Pouring Art';
-                        w.document.body.style.margin = '0';
-                        w.document.body.style.display = 'flex';
-                        w.document.body.style.justifyContent = 'center';
-                        w.document.body.style.alignItems = 'center';
-                        w.document.body.appendChild(img);
-                    } else {
-                        // もしポップアップ不可なら、オーバーレイにダウンロードリンクをセットして開く
-                        previewImage.src = dataURL;
-                        downloadLink.href = dataURL;
-                        if (saveOverlay) {
-                            saveOverlay.setAttribute('aria-hidden', 'false');
-                            qrContainer.style.display = 'none';
-                            fallbackArea.style.display = '';
-                        }
+                    if (showStatus) {
+                        saveStatus.textContent = '共有しました。';
+                        closeSaveOverlayFunc();
                     }
                 } catch (err) {
-                    console.error('プレビュー表示エラー:', err);
-                    if (showStatus) saveStatus.textContent = 'プレビュー表示に失敗しました。';
+                    if (showStatus) saveStatus.textContent = '共有がキャンセルされました。';
                 }
+            } else {
+                if (showStatus) saveStatus.textContent = 'このブラウザは共有機能未対応です。';
+                try {
+                    previewImage.src = dataURL;
+                    downloadLink.href = dataURL;
+                    if (saveOverlay) {
+                        saveOverlay.setAttribute('aria-hidden', 'false');
+                        qrContainer.style.display = 'none';
+                        fallbackArea.style.display = '';
+                    }
+                } catch (err) { console.error(err); }
             }
-        }).catch(err => {
-            console.error('share blob error', err);
-            if (showStatus) saveStatus.textContent = '共有準備でエラーが発生しました。';
-        });
+        }).catch(err => { console.error(err); });
     }
 
-    // Attempt to make a QR by trying smaller thumbnails/qualities until it fits
     function attemptGenerateQRWithRetries() {
-        saveStatus.textContent = 'QR生成を試しています...';
-        const MAX_QR_CHARS = 1200; // safe target for Google QR
-        const widths = [320, 240, 200, 160, 120];
-        const qualities = [0.7, 0.6, 0.5, 0.4, 0.3];
+        if(!saveStatus) return;
+        saveStatus.textContent = 'QR生成中...';
+        const MAX_QR_CHARS = 1200; 
+        const widths = [320, 240, 200];
+        const qualities = [0.7, 0.5, 0.3];
 
         (async () => {
             let found = false;
@@ -272,25 +269,22 @@ window.addEventListener('load', () => {
                 for (let q of qualities) {
                     const thumb = generateCombinedDataURL(w, q, 'image/jpeg');
                     if (thumb.length <= MAX_QR_CHARS) {
-                        // generate QR via Google Charts API
                         const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumb);
                         qrContainer.innerHTML = '';
                         const img = document.createElement('img');
                         img.src = api;
-                        img.alt = 'QR code';
                         img.style.maxWidth = '100%';
                         qrContainer.appendChild(img);
                         qrContainer.style.display = '';
                         fallbackArea.style.display = 'none';
-                        saveStatus.textContent = `QR生成成功 (w=${w}, q=${q}) - スマホでスキャンしてください`;
+                        saveStatus.textContent = `QR生成成功`;
                         found = true;
                         return;
                     }
                 }
             }
             if (!found) {
-                saveStatus.textContent = 'QRに収まりません。共有（AirDrop等）をお試しください。下のダウンロードリンクからも取得できます。';
-                // set full preview + download
+                saveStatus.textContent = '画像が大きすぎるためQR表示できません。直接ダウンロードしてください。';
                 const full = generateCombinedDataURL();
                 previewImage.src = full;
                 downloadLink.href = full;
@@ -305,12 +299,8 @@ window.addEventListener('load', () => {
         saveOverlay.setAttribute('aria-hidden', 'true');
         qrContainer.innerHTML = '';
         previewImage.src = '';
-        downloadLink.href = '#';
     }
 
-    // キャンバスを合成して dataURL を返す
-    // width: 出力幅（省略時はキャンバス幅）
-    // quality: JPEG品質（0-1）, mimeType: 'image/png' or 'image/jpeg'
     function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
@@ -318,60 +308,16 @@ window.addEventListener('load', () => {
         tmp.width = w; tmp.height = h;
         const ctx = tmp.getContext('2d');
 
-        // Read computed style filter from one of the canvases (they share same CSS)
-        let filterValue = 'none';
-        try { const cs = getComputedStyle(particleCanvas); if (cs && cs.filter) filterValue = cs.filter; } catch (e) { filterValue = 'none'; }
+        // Draw background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,w,h);
 
-        // Parse blur(px) and contrast(...) from filterValue
-        let blurPx = 0; let contrastVal = 1;
-        const blurMatch = /blur\((\d+(?:\.\d+)?)px\)/.exec(filterValue);
-        if (blurMatch) blurPx = Math.max(0, Math.floor(parseFloat(blurMatch[1])));
-        const contrastMatch = /contrast\(([^)]+)\)/.exec(filterValue);
-        if (contrastMatch) {
-            let raw = contrastMatch[1].trim();
-            if (raw.endsWith('%')) { contrastVal = parseFloat(raw) / 100; }
-            else contrastVal = parseFloat(raw);
-            if (!isFinite(contrastVal) || contrastVal <= 0) contrastVal = 1;
-        }
-
-        // Draw base images without relying on ctx.filter
+        // Draw canvases
         ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
         ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
 
-        // Apply approximate blur by drawing multiple offset copies (simple box blur approximation)
-        if (blurPx > 0) {
-            const r = Math.min(12, Math.max(1, Math.round(blurPx * (w / permanentCanvas.width))));
-            const src = document.createElement('canvas'); src.width = w; src.height = h; const sctx = src.getContext('2d'); sctx.drawImage(tmp,0,0);
-            ctx.clearRect(0,0,w,h);
-            const samples = Math.min(7, 1 + Math.floor(r/2));
-            const half = Math.floor(samples/2);
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.globalAlpha = 1 / (samples * samples);
-            for (let dy = -half; dy <= half; dy++) {
-                for (let dx = -half; dx <= half; dx++) {
-                    ctx.drawImage(src, dx, dy, w, h);
-                }
-            }
-            ctx.globalAlpha = 1;
-        }
-
-        // Apply contrast adjustment if needed
-        if (contrastVal && Math.abs(contrastVal - 1) > 0.001) {
-            try {
-                const img = ctx.getImageData(0,0,w,h);
-                const data = img.data; const c = contrastVal;
-                for (let i=0;i<data.length;i+=4) {
-                    for (let ch=0; ch<3; ch++) {
-                        let v = data[i+ch]; let nv = (v - 128) * c + 128;
-                        data[i+ch] = nv < 0 ? 0 : nv > 255 ? 255 : nv;
-                    }
-                }
-                ctx.putImageData(img,0,0);
-            } catch(e) { console.warn('contrast apply failed', e); }
-        }
-
         const mt = mimeType || 'image/png';
-        if (mt === 'image/jpeg') { const q = typeof quality === 'number' ? quality : 0.7; return tmp.toDataURL('image/jpeg', q); }
+        if (mt === 'image/jpeg') { return tmp.toDataURL('image/jpeg', quality || 0.7); }
         return tmp.toDataURL('image/png');
     }
 
@@ -387,6 +333,7 @@ window.addEventListener('load', () => {
             pourFromCupButton.style.backgroundColor = "";
             pourFromCupButton.textContent = "コップから流す";
         }
+        updateDebugBox();
     }
 
     function updateCupVisual() {
@@ -400,44 +347,27 @@ window.addEventListener('load', () => {
         cupVisual.scrollTop = cupVisual.scrollHeight;
     }
 
-    /**
-     * ★変更: 面積一定化ロジック
-     * 外側に行くほど層を薄くして、色の見た目の量を均等にする
-     */
     function pourFromCup(centerX, centerY) {
-        // 1クリック分の「面積」（半径ではない）を定義
-        // この値を大きくすると全体が大きくなります
-        const AREA_PER_UNIT = 100; 
+        // ★変更: 1回の量を増やして見やすくする（元100 -> 400）
+        const AREA_PER_UNIT = 400; 
 
         let currentTotalArea = 0;
 
-        // コップに入っている色を順番に処理
         for (const color of cupColors) {
-            
-            // 1. 面積の計算
-            // 前回の総面積
             const startArea = currentTotalArea;
-            // 今回の層を足した総面積
             const endArea = startArea + AREA_PER_UNIT;
             
-            // 2. 半径への変換 ( Area = π * r^2  =>  r = sqrt(Area / π) )
             const startR = Math.sqrt(startArea / Math.PI);
             const endR = Math.sqrt(endArea / Math.PI);
             
-            // 3. 粒子密度の計算
-            // 面積に対して一定の粒子数を配置することで、隙間なく埋める
-            const layerArea = endArea - startArea; // 今回の層だけの面積（これは常に一定）
-            const particleCount = Math.floor(layerArea * 0.05); // 密度係数
+            const layerArea = endArea - startArea;
+            // 密度も少し上げる (0.05 -> 0.1)
+            const particleCount = Math.floor(layerArea * 0.1);
 
             for (let i = 0; i < particleCount; i++) {
-                // ★ 工夫: 境界を少し混ぜるためのノイズ
-                // startR と endR の間だけでなく、少しはみ出させる
                 const noise = (Math.random() - 0.5) * 10; 
-                
-                // 均一な分布になるようなランダム半径の計算
-                // (単純な random() だと中心に寄ってしまうため平方根をとる)
                 const rBase = Math.sqrt(Math.random() * (endR*endR - startR*startR) + startR*startR);
-                const r = rBase + noise; // ノイズを加える
+                const r = rBase + noise;
 
                 const angle = Math.random() * Math.PI * 2;
                 
@@ -446,7 +376,6 @@ window.addEventListener('load', () => {
                 
                 const newParticle = createParticle(pX, pY, color);
                 
-                // 広がる力（少しランダム性を強めて不規則に）
                 const spreadSpeed = 1.5 + Math.random();
                 newParticle.vx = Math.cos(angle) * spreadSpeed;
                 newParticle.vy = Math.sin(angle) * spreadSpeed;
@@ -454,10 +383,37 @@ window.addEventListener('load', () => {
                 particles.push(newParticle);
                 drawOnParticle(newParticle);
             }
-
-            // 次のループのために総面積を更新
             currentTotalArea = endArea;
         }
+
+        // ★追加: 流し終わったらコップを空にする
+        cupColors = [];
+        updateCupVisual();
+        updateDebugBox();
+    }
+
+    // --- パーティクル処理 ---
+    function createParticle(x, y, color) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 2;
+        return {
+            x: x, y: y,
+            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            color: color,
+            radius: Math.random() * 2 + 2,
+            maxRadius: Math.random() * 15 + 10, 
+            age: 0,
+            maxAge: MAX_AGE_FRAMES + Math.random() * 150,
+            gracePeriod: GRAVITY_GRACE_PERIOD 
+        };
+    }
+
+    function clearParticleCanvas() {
+        particleContext.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+    }
+    function clearPermanentCanvas() {
+        permanentContext.fillStyle = '#FFFFFF';
+        permanentContext.fillRect(0, 0, permanentCanvas.width, permanentCanvas.height);
     }
 
     function drawOnParticle(p) {
@@ -480,7 +436,6 @@ window.addEventListener('load', () => {
         clearParticleCanvas();
         updateParticles();
         drawParticles();
-        updateDebugBox();
         requestAnimationFrame(animate);
     }
 
@@ -502,12 +457,11 @@ window.addEventListener('load', () => {
 
             if (p.gracePeriod <= 0) { 
                 if (isSensorActive) {
-                    // ★センサー有効時: 傾きに応じて加速させる
-                    // tilt.x, tilt.y は定数的な力（重力）として加算
+                    // ★傾きで流れる（tilt.x, tilt.y は handleOrientation で更新）
                     p.vx += tilt.x;
                     p.vy += tilt.y;
                 } else {
-                    // ★センサー無効時（PCなど）: 従来どおりマウスに集まる（または無効化してもOK）
+                    // ★センサーがない時はマウスへ（フォールバック）
                     const dx_mouse = mouse.x - p.x;
                     const dy_mouse = mouse.y - p.y;
                     p.vx += dx_mouse * gravityStrength;
@@ -518,13 +472,11 @@ window.addEventListener('load', () => {
             p.vx *= friction;
             p.vy *= friction;
 
-            // 衝突判定（少し処理を軽くするために回数を減らしたり、距離チェックを簡易化しても良いが、
-            // ここでは以前のロジックを維持）
+            // 衝突判定
             for (let j = i - 1; j >= 0; j--) {
                 const p_other = particles[j];
                 const dx = p.x - p_other.x;
                 const dy = p.y - p_other.y;
-                // 高速化: Math.sqrtを使わず距離の二乗で判定
                 const distSq = dx*dx + dy*dy;
                 const minDist = p.radius + p_other.radius;
                 
@@ -564,4 +516,3 @@ window.addEventListener('load', () => {
     clearPermanentCanvas(); 
     animate();
 });
-
