@@ -227,7 +227,6 @@ window.addEventListener('load', () => {
     function shareCurrentImageToPhone() {
         const showStatus = saveOverlay && saveOverlay.getAttribute('aria-hidden') === 'false';
         if (showStatus) saveStatus.textContent = '共有を試みています...';
-        // 遅延を入れてUI更新を確実にする
         setTimeout(() => {
             const dataURL = generateCombinedDataURL();
             fetch(dataURL).then(r => r.blob()).then(async (blob) => {
@@ -305,8 +304,7 @@ window.addEventListener('load', () => {
         previewImage.src = '';
     }
 
-    // --- ★重要: 手動画像処理（ぼかし＆コントラスト） ---
-    // ブラウザのフィルタ機能に依存せず、ピクセル操作で「とろっとした効果」を再現します
+    // ★修正: 手動画像処理（強力な閾値カット）
     function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
@@ -316,23 +314,18 @@ window.addEventListener('load', () => {
         tempCanvas.width = w; tempCanvas.height = h;
         const tCtx = tempCanvas.getContext('2d');
         
-        // 描画（元のキャンバスをリサイズして描画）
+        // 元の絵を描画
         tCtx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
         tCtx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
 
-        // ピクセルデータを取得
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        // 1. ぼかし処理（Box Blur 2回掛けでガウシアン近似）
-        // 半径10px相当のぼかし
-        fastBlur(imageData, 10); 
-        fastBlur(imageData, 10);
+        // 1. ぼかし処理（強め）
+        fastBlur(imageData, 12); 
 
-        // 2. コントラスト処理（しきい値処理）
-        // アルファ値（不透明度）を極端に操作して、ぼけた境界をくっきりさせる
-        applyHardContrast(imageData);
+        // 2. しきい値処理（くっきりさせる）
+        applyHardThreshold(imageData);
 
-        // 処理後のデータを戻す
         tCtx.putImageData(imageData, 0, 0);
 
         // 最終出力用（白背景と合成）
@@ -351,26 +344,24 @@ window.addEventListener('load', () => {
 
     // --- 画像処理用ヘルパー関数 ---
     
-    // 簡易コントラスト（メタボール効果用）
-    function applyHardContrast(imageData) {
+    // ★修正: 強制的なしきい値カット
+    // アルファ値がある程度（200/255）以上なら不透明、それ以下なら透明にする
+    function applyHardThreshold(imageData) {
         const data = imageData.data;
-        // contrast(20) は標準の20倍のコントラスト。
-        // アルファチャンネルに対して強烈なカーブを適用する
+        // しきい値（高いほど細くくっきり、低いほど太くなる）
+        const THRESHOLD = 180; 
+
         for (let i = 0; i < data.length; i += 4) {
             const a = data[i + 3]; // Alpha
-            if (a < 10) {
-                data[i + 3] = 0; // 完全に消す
+            if (a < THRESHOLD) {
+                data[i + 3] = 0; // 完全に透明にする
             } else {
-                // しきい値を超えたら一気に不透明に近づける
-                let newAlpha = (a - 100) * 20 + 128;
-                if (newAlpha < 0) newAlpha = 0;
-                if (newAlpha > 255) newAlpha = 255;
-                data[i + 3] = newAlpha;
+                data[i + 3] = 255; // 完全に不透明にする
             }
         }
     }
 
-    // 高速ボックスぼかし (簡易実装)
+    // 高速ボックスぼかし
     function fastBlur(imageData, radius) {
         if (isNaN(radius) || radius < 1) return;
         const width = imageData.width;
@@ -382,7 +373,7 @@ window.addEventListener('load', () => {
             for (let x = 0; x < width; x++) {
                 let r = 0, g = 0, b = 0, a = 0;
                 let count = 0;
-                for (let i = -radius; i <= radius; i += 2) { // 間引いて高速化
+                for (let i = -radius; i <= radius; i += 2) { 
                     const nx = x + i;
                     if (nx >= 0 && nx < width) {
                         const idx = (y * width + nx) * 4;
