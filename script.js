@@ -88,7 +88,8 @@ window.addEventListener('load', () => {
     const airdropHint = document.getElementById('airdropHint');
 
     saveImageButton && saveImageButton.addEventListener('click', async () => {
-        openSaveOverlay();
+        // 直接共有フローを開始（QRやオーバーレイは表示しない）
+        shareCurrentImageToPhone();
     });
     closeSaveOverlay && closeSaveOverlay.addEventListener('click', () => closeSaveOverlayFunc());
     shareToPhoneButton && shareToPhoneButton.addEventListener('click', () => {
@@ -126,26 +127,58 @@ window.addEventListener('load', () => {
 
     // Try to share current image via Web Share API (files) if available
     function shareCurrentImageToPhone() {
-        saveStatus.textContent = '共有を試みています...（近くのスマホへ送信できます）';
+        // 共有処理は UI がオーバーレイで開かれている場合のみ状態表示を行う
+        const showStatus = saveOverlay && saveOverlay.getAttribute('aria-hidden') === 'false';
+        if (showStatus) saveStatus.textContent = '共有を試みています...（近くのスマホへ送信できます）';
+
         const dataURL = generateCombinedDataURL();
         fetch(dataURL).then(r => r.blob()).then(async (blob) => {
             const file = new File([blob], 'pouring.png', { type: blob.type });
             if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
                 try {
                     await navigator.share({ files: [file], title: 'Pouring Art' });
-                    saveStatus.textContent = '共有しました。スマホで確認してください。';
-                    closeSaveOverlayFunc();
+                    if (showStatus) saveStatus.textContent = '共有しました。スマホで確認してください。';
+                    // クローズはオーバーレイを開いている場合のみ行う
+                    if (showStatus) closeSaveOverlayFunc();
                     return;
                 } catch (err) {
                     console.warn('共有がキャンセルまたは失敗:', err);
-                    saveStatus.textContent = '共有操作がキャンセルされました。QR生成を試します。';
+                    if (showStatus) saveStatus.textContent = '共有操作がキャンセルされました。';
                 }
             } else {
-                saveStatus.textContent = 'デバイスの共有機能が使えません。QRを試します。';
+                if (showStatus) saveStatus.textContent = 'デバイスの共有機能が使えません。フォールバックを試します。';
+                // フォールバック: 新しいタブで画像を開く（ユーザが長押しで保存可能）
+                try {
+                    const w = window.open();
+                    if (w) {
+                        w.document.write('<title>Pouring Art</title>');
+                        const img = w.document.createElement('img');
+                        img.src = dataURL;
+                        img.style.maxWidth = '100%';
+                        img.alt = 'Pouring Art';
+                        w.document.body.style.margin = '0';
+                        w.document.body.style.display = 'flex';
+                        w.document.body.style.justifyContent = 'center';
+                        w.document.body.style.alignItems = 'center';
+                        w.document.body.appendChild(img);
+                    } else {
+                        // もしポップアップ不可なら、オーバーレイにダウンロードリンクをセットして開く
+                        previewImage.src = dataURL;
+                        downloadLink.href = dataURL;
+                        if (saveOverlay) {
+                            saveOverlay.setAttribute('aria-hidden', 'false');
+                            qrContainer.style.display = 'none';
+                            fallbackArea.style.display = '';
+                        }
+                    }
+                } catch (err) {
+                    console.error('プレビュー表示エラー:', err);
+                    if (showStatus) saveStatus.textContent = 'プレビュー表示に失敗しました。';
+                }
             }
         }).catch(err => {
             console.error('share blob error', err);
-            saveStatus.textContent = '共有準備でエラーが発生しました。QRを試します。';
+            if (showStatus) saveStatus.textContent = '共有準備でエラーが発生しました。';
         });
     }
 
