@@ -45,20 +45,16 @@ window.addEventListener('load', () => {
         __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
     }
 
-    // --- ★変更点: 設定値の調整 ---
-    // 重力の影響を0に (0.005 -> 0)
-    const gravityStrength = 0;      
-    
-    // スピード（摩擦）を前に戻す (0.96 -> 0.90)
-    const friction = 0.90;          
-    
+    // --- ★変更: ご指定のシミュレーション定数 ---
+    const gravityStrength = 0.005; 
+    const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
-    const GRAVITY_GRACE_PERIOD = 60; 
+    const GRAVITY_GRACE_PERIOD = 0; 
 
-    // 傾きの感度と強さを前に戻す
-    const SENSOR_SENSITIVITY = 40;   // (30 -> 40)
-    const SENSOR_FORCE_POWER = 1.0;  // (3.0 -> 1.0)
+    // センサー用の定数（元の速度感に合わせて調整）
+    const SENSOR_SENSITIVITY = 40;   
+    const SENSOR_FORCE_POWER = 1.0;
 
     // --- イベントリスナー ---
     function getCanvasCoordinates(clientX, clientY) {
