@@ -193,7 +193,7 @@ window.addEventListener('load', () => {
             let found = false;
             for (let w of widths) {
                 for (let q of qualities) {
-                    const thumb = generateCombinedDataURL(w, q);
+                    const thumb = generateCombinedDataURL(w, q, 'image/jpeg');
                     if (thumb.length <= MAX_QR_CHARS) {
                         // generate QR via Google Charts API
                         const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumb);
@@ -233,21 +233,41 @@ window.addEventListener('load', () => {
 
     // キャンバスを合成して dataURL を返す
     // width: 出力幅（省略時はキャンバス幅）
-    // quality: JPEG品質（0-1）, 省略時は 0.92
-    function generateCombinedDataURL(width, quality) {
+    // quality: JPEG品質（0-1）, mimeType: 'image/png' or 'image/jpeg'
+    function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
         const tmp = document.createElement('canvas');
         tmp.width = w; tmp.height = h;
         const ctx = tmp.getContext('2d');
 
-        // draw permanent then particle
-        // scale appropriately
+        // Try to respect the on-screen CSS filter so the saved image matches appearance
+        // Read computed style filter from one of the canvases (they share same CSS)
+        let filterValue = 'none';
+        try {
+            const cs = getComputedStyle(particleCanvas);
+            if (cs && cs.filter) filterValue = cs.filter;
+        } catch (e) {
+            filterValue = 'none';
+        }
+
+        // If we are scaling down for thumbnails and using JPEG for QR, it's ok to use JPEG there.
+        // Apply the filter while drawing so canvas pixels include the effect.
+        ctx.filter = filterValue || 'none';
+
+        // draw permanent then particle (both under same filter)
         ctx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
         ctx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
 
-        const q = typeof quality === 'number' ? quality : 0.92;
-        return tmp.toDataURL('image/jpeg', q);
+        // reset filter
+        ctx.filter = 'none';
+
+        const mt = mimeType || 'image/png';
+        if (mt === 'image/jpeg') {
+            const q = typeof quality === 'number' ? quality : 0.92;
+            return tmp.toDataURL('image/jpeg', q);
+        }
+        return tmp.toDataURL('image/png');
     }
 
     // --- 関数 ---
