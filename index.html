@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Pouring Art - Step 14 (Layout)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Digital Pouring Art</h1>
+    
+    <div class="main-container">
+
+        <div class="sidebar">
+            <div class="controls-section">
+                <h3>🎨 コップ操作</h3>
+                
+                <div class="input-group">
+                    <label for="colorPicker">色:</label>
+                    <input type="color" id="colorPicker" value="#FF0000">
+                </div>
+
+                <div id="cup-ui">
+                    <button id="addToCupButton">↑の色をコップに追加</button>
+                    <div id="cupVisual" title="コップの中身"></div>
+                </div>
+                
+                <button id="pourFromCupButton">コップから流す</button>
+                <p>（ボタンを押した後、キャンバスをクリック）</p>
+            </div>
+
+            <button id="resetButton">全部やり直す</button>
+        </div>
+
+        <div class="canvas-area">
+            <div id="canvas-stack">
+                <canvas id="permanentCanvas"></canvas>
+                <canvas id="particleCanvas"></canvas>
+            </div>
+        </div>
+
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
