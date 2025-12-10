@@ -31,7 +31,7 @@ button {
     justify-content: center;
     gap: 30px; /* 左パネルとキャンバスの間隔 */
     padding: 20px;
-    margin-top: 30px; /* キャンバス位置を少し下げる */
+    margin-top: 150px; /* キャンバス位置を少し下げる */
 }
 
 /* ★追加: 左サイドバー */
