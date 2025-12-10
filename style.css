@@ -31,6 +31,7 @@ button {
     justify-content: center;
     gap: 30px; /* 左パネルとキャンバスの間隔 */
     padding: 20px;
+    margin-top: 30px; /* キャンバス位置を少し下げる */
 }
 
 /* ★追加: 左サイドバー */
@@ -87,10 +88,7 @@ button {
     border-top: 1px solid rgba(0,0,0,0.1);
 }
 
-/* キャンバスエリア */
-.canvas-area {
-    /* 必要に応じてスタイル追加 */
-}
+/* キャンバスエリア（必要に応じてスタイル追加可） */
 
 #canvas-stack {
     position: relative;
