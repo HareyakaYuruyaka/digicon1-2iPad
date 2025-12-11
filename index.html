@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Pouring Art - Step 14 (Layout)</title>
+    <title>Digital Pouring Art</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <h1>Digital Pouring Art</h1>
+    
     <div class="main-container">
 
         <div class="sidebar">
@@ -28,44 +30,23 @@
             </div>
 
             <button id="resetButton">全部やり直す</button>
-            <button id="saveImageButton">画像を保存</button>
         </div>
 
         <div class="canvas-area">
             <div id="canvas-stack">
-                <canvas id="permanentCanvas"></canvas>
-                <canvas id="particleCanvas"></canvas>
+                <div class="ink-layer">
+                    <canvas id="permanentCanvas"></canvas>
+                    <canvas id="particleCanvas"></canvas>
+                </div>
             </div>
         </div>
 
     </div>
     
-    <!-- オーバーレイ: 画面を暗くし、QRやプレビューを表示 -->
-    <div id="saveOverlay" class="save-overlay" aria-hidden="true">
-        <div class="save-overlay-backdrop"></div>
-        <div class="save-overlay-content">
-            <button id="closeSaveOverlay" class="close-overlay">✕</button>
-
-            <div id="qrContainer" class="qr-container"></div>
-
-            <div id="saveActions" class="save-actions">
-                <button id="shareToPhoneButton">スマホに送る（AirDrop / 共有）</button>
-                <button id="regenQrButton">QRをさらに圧縮して生成</button>
-                <p id="saveStatus" style="font-size:13px;color:#444;margin-top:8px;"></p>
-                <p id="airdropHint" class="airdrop-hint">AirDropで受け取るには：来場者のiPhoneで「AirDropを受信する」に設定し、この端末の「スマホに送る」をタップ → 来場者のiPhone名を選んで受信してください。受信後、写真アプリで保存できます。</p>
-            </div>
-
-            <div id="fallbackArea" class="fallback-area">
-                <p>QRに収まらない画像は、以下で直接ダウンロードしてください。</p>
-                <img id="previewImage" alt="キャンバスプレビュー">
-                <a id="downloadLink" download="pouring.png">画像をダウンロード</a>
-            </div>
-        </div>
-    </div>
     <svg style="visibility: hidden; position: absolute;" width="0" height="0" xmlns="http://www.w3.org/2000/svg" version="1.1">
         <defs>
             <filter id="goo">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
                 <feColorMatrix in="blur" mode="matrix" values="
                     1 0 0 0 0  
                     0 1 0 0 0  
