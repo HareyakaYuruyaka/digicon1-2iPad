@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../digicon1"
+		},
+		{
+			"path": "../digicon2_webgl"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "digicon2_webgl"
+	}
+}
