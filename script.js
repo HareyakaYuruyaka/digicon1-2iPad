@@ -328,7 +328,7 @@ window.addEventListener('load', () => {
         fastBlur(imageData, 6);
 
         // 2. コントラスト処理（強力にかける＝CSSのcontrast(20)相当）
-        applyHighContrast(imageData, 20); // Factor 20
+        applyHighContrast(imageData, 10); // Factor 20
 
         tCtx.putImageData(imageData, 0, 0);
 
