@@ -22,6 +22,7 @@ button {
     box-sizing: border-box;
 }
 
+/* レイアウトコンテナ */
 .main-container {
     display: flex;
     flex-direction: row;
@@ -31,6 +32,7 @@ button {
     padding: 20px;
 }
 
+/* 左サイドバー */
 .sidebar {
     width: 300px;
     display: flex;
@@ -38,6 +40,7 @@ button {
     gap: 15px;
 }
 
+/* コントロールセクション */
 .controls-section {
     border: 1px solid #ccc;
     padding: 20px;
@@ -83,40 +86,34 @@ button {
     border-top: 1px solid rgba(0,0,0,0.1);
 }
 
+/* キャンバスエリア */
 .canvas-area {
-    /* 必要に応じてスタイル追加 */
+    /* ここに背景色を設定（キャンバス自体は透明にするため） */
+    background-color: #fff; 
+    padding: 10px;
 }
 
-/* キャンバスの「枠」と「紙の白さ」 */
 #canvas-stack {
     position: relative;
     width: 800px; 
     height: 600px;
     border: 1px solid #999;
-    background-color: #fff; /* ここが紙の白 */
+    
+    /* 背景色は透明にする（親の.canvas-areaの白が見える） */
+    background-color: transparent; 
+    
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+    /* ★SVGフィルターをコンテナ全体に適用 */
+    filter: url('#paint-effect');
 }
 
-/* ★追加: インク層のコンテナ（フィルター処理用） */
-.ink-layer {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: transparent;
-    
-    /* まとめてフィルターをかけることで軽量化 */
-    filter: url('#goo');
-    
-    /* GPUアクセラレーションの有効化 */
-    transform: translate3d(0,0,0);
-    will-change: filter;
-}
-
-/* 個別のキャンバスはフィルターなし・背景透明 */
 #permanentCanvas, #particleCanvas {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
+    
+    /* 以前のCSSフィルター(blur/contrast)は削除し、背景も透明に */
     background-color: transparent;
 }
 #particleCanvas { z-index: 2; cursor: default; }

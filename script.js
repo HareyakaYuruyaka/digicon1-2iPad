@@ -23,7 +23,7 @@ window.addEventListener('load', () => {
     let isPourMode = false;
 
     let tilt = { x: 0, y: 0 };
-    let isSensorActive = false;
+    let isSensorActive = false; 
 
     // --- シミュレーション定数 ---
     const gravityStrength = 0.005; 
@@ -109,13 +109,13 @@ window.addEventListener('load', () => {
             const startR = Math.sqrt(startArea / Math.PI);
             const endR = Math.sqrt(endArea / Math.PI);
             
-            const layerArea = endArea - startArea;
-            const particleCount = Math.floor(layerArea * 0.05);
+            const layerArea = endArea - startArea; 
+            const particleCount = Math.floor(layerArea * 0.05); 
 
             for (let i = 0; i < particleCount; i++) {
                 const noise = (Math.random() - 0.5) * 10; 
                 const rBase = Math.sqrt(Math.random() * (endR*endR - startR*startR) + startR*startR);
-                const r = rBase + noise;
+                const r = rBase + noise; 
 
                 const angle = Math.random() * Math.PI * 2;
                 
@@ -169,14 +169,10 @@ window.addEventListener('load', () => {
         const speed = Math.random() * 2;
         return {
             x: x, y: y,
-            // ★追加: 前回の位置を記録するプロパティ
-            prevX: x, 
-            prevY: y,
-            
             vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
             color: color,
-            radius: Math.random() * 2 + 2, // サイズは好みで
-            maxRadius: Math.random() * 15 + 10, // 元: * 15 + 10
+            radius: Math.random() * 2 + 2, 
+            maxRadius: Math.random() * 15 + 10, 
             age: 0,
             maxAge: MAX_AGE_FRAMES + Math.random() * 150,
             gracePeriod: GRAVITY_GRACE_PERIOD 
@@ -187,43 +183,27 @@ window.addEventListener('load', () => {
         particleContext.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
     }
     
-    // ★変更: ここを白塗りではなく透明消去に変更
+    // ★変更: 背景を白で塗るのではなく、透明にクリアする
     function clearPermanentCanvas() {
-        // 白背景はCSS(#canvas-stack)で表現するため、ここでは透明にする
-        permanentContext.clearRect(0, 0, permanentCanvas.width, permanentCanvas.height);
+        permanentContext.clearRect(0, 0, permanentContext.canvas.width, permanentContext.canvas.height);
     }
 
     function drawOnParticle(p) {
         particleContext.beginPath();
-        particleContext.globalAlpha = 0.6;
+        // ★変更: フィルターで薄くなりすぎないよう不透明(1.0)にする
+        particleContext.globalAlpha = 1.0; 
         particleContext.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         particleContext.fillStyle = p.color;
         particleContext.fill();
     }
 
     function drawOnPermanent(p) {
-        // permanentContext.beginPath();
-        // permanentContext.globalAlpha = 0.6;
-        // permanentContext.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        // permanentContext.fillStyle = p.color;
-        // permanentContext.fill();
-
         permanentContext.beginPath();
-        
-        // ★変更: 円(arc)ではなく、前回の位置から今回の位置へ線を引く
-        permanentContext.moveTo(p.prevX, p.prevY);
-        permanentContext.lineTo(p.x, p.y);
-        
-        // 線の端を丸くして、滑らかにする
-        permanentContext.lineCap = 'round';
-        permanentContext.lineJoin = 'round';
-        
-        // 線の太さを粒子の直径にする
-        permanentContext.lineWidth = p.radius * 2;
-        
-        permanentContext.strokeStyle = p.color; // fillStyleではなくstrokeStyle
-        permanentContext.globalAlpha = 0.6;
-        permanentContext.stroke(); // fill()ではなくstroke()
+        // ★変更: こちらも不透明に
+        permanentContext.globalAlpha = 1.0; 
+        permanentContext.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        permanentContext.fillStyle = p.color;
+        permanentContext.fill();
     }
     
     function animate() {
@@ -236,10 +216,6 @@ window.addEventListener('load', () => {
     function updateParticles() {
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
-
-            // ★移動計算の前に、今の位置を「前回の位置」として保存
-            p.prevX = p.x;
-            p.prevY = p.y;
             
             drawOnPermanent(p);
 
@@ -268,7 +244,6 @@ window.addEventListener('load', () => {
             p.vx *= friction;
             p.vy *= friction;
 
-            // 衝突判定
             for (let j = i - 1; j >= 0; j--) {
                 const p_other = particles[j];
                 const dx = p.x - p_other.x;
@@ -295,15 +270,10 @@ window.addEventListener('load', () => {
                 p.radius += 0.15;
             }
 
-            // 壁判定
             if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.5; }
             if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
             if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
             if (p.y > particleCanvas.height - p.radius) { p.y = particleCanvas.height - p.radius; p.vy *= -0.5; }
-
-            // ★描画関数の呼び出し位置を「座標更新の後」に移動すると、
-            // prevXとxの間に線が引けるようになります
-            drawOnPermanent(p);
         }
     }
     
