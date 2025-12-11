@@ -169,12 +169,14 @@ window.addEventListener('load', () => {
         const speed = Math.random() * 2;
         return {
             x: x, y: y,
+            // ★追加: 前回の位置を記録するプロパティ
+            prevX: x, 
+            prevY: y,
+            
             vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
             color: color,
-            // ★変更: 粒子のサイズを一回り大きくする
-            // 小さいとフィルタで消えてしまうため、最低サイズを大きく設定
-            radius: Math.random() * 5 + 8,  // 元: * 2 + 2
-            maxRadius: Math.random() * 20 + 15, // 元: * 15 + 10
+            radius: Math.random() * 2 + 2, // サイズは好みで
+            maxRadius: Math.random() * 15 + 10, // 元: * 15 + 10
             age: 0,
             maxAge: MAX_AGE_FRAMES + Math.random() * 150,
             gracePeriod: GRAVITY_GRACE_PERIOD 
@@ -200,11 +202,28 @@ window.addEventListener('load', () => {
     }
 
     function drawOnPermanent(p) {
+        // permanentContext.beginPath();
+        // permanentContext.globalAlpha = 0.6;
+        // permanentContext.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        // permanentContext.fillStyle = p.color;
+        // permanentContext.fill();
+
         permanentContext.beginPath();
+        
+        // ★変更: 円(arc)ではなく、前回の位置から今回の位置へ線を引く
+        permanentContext.moveTo(p.prevX, p.prevY);
+        permanentContext.lineTo(p.x, p.y);
+        
+        // 線の端を丸くして、滑らかにする
+        permanentContext.lineCap = 'round';
+        permanentContext.lineJoin = 'round';
+        
+        // 線の太さを粒子の直径にする
+        permanentContext.lineWidth = p.radius * 2;
+        
+        permanentContext.strokeStyle = p.color; // fillStyleではなくstrokeStyle
         permanentContext.globalAlpha = 0.6;
-        permanentContext.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        permanentContext.fillStyle = p.color;
-        permanentContext.fill();
+        permanentContext.stroke(); // fill()ではなくstroke()
     }
     
     function animate() {
@@ -217,6 +236,10 @@ window.addEventListener('load', () => {
     function updateParticles() {
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
+
+            // ★移動計算の前に、今の位置を「前回の位置」として保存
+            p.prevX = p.x;
+            p.prevY = p.y;
             
             drawOnPermanent(p);
 
@@ -277,6 +300,10 @@ window.addEventListener('load', () => {
             if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
             if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
             if (p.y > particleCanvas.height - p.radius) { p.y = particleCanvas.height - p.radius; p.vy *= -0.5; }
+
+            // ★描画関数の呼び出し位置を「座標更新の後」に移動すると、
+            // prevXとxの間に線が引けるようになります
+            drawOnPermanent(p);
         }
     }
     
