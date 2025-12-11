@@ -25,9 +25,25 @@ window.addEventListener('load', () => {
     let tilt = { x: 0, y: 0 };
     let isSensorActive = false; 
 
-    // --- 簡易デバッグボックス（無効化中） ---
-    const __debugBox = null;
-    function updateDebugBox() { /* no-op */ }
+    // --- 簡易デバッグボックス ---
+    const __debugBox = document.createElement('div');
+    __debugBox.id = '__debugBox';
+    __debugBox.style.position = 'fixed';
+    __debugBox.style.right = '12px';
+    __debugBox.style.top = '12px';
+    __debugBox.style.background = 'rgba(0,0,0,0.6)';
+    __debugBox.style.color = '#fff';
+    __debugBox.style.padding = '6px 8px';
+    __debugBox.style.borderRadius = '6px';
+    __debugBox.style.fontSize = '12px';
+    __debugBox.style.zIndex = 20000;
+    __debugBox.style.maxWidth = '220px';
+    __debugBox.style.pointerEvents = 'none';
+    document.body.appendChild(__debugBox);
+
+    function updateDebugBox() {
+        __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
+    }
 
     // --- シミュレーション定数 ---
     const gravityStrength = 0.005; 
