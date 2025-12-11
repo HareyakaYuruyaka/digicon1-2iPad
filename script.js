@@ -87,16 +87,32 @@ window.addEventListener('load', () => {
         mouse.y = pos.y;
     });
 
-    // --- UIボタン ---
-    if (addToCupButton) {
-        addToCupButton.addEventListener('click', () => {
-            if (!colorPicker) return;
-            const color = colorPicker.value;
+    // // --- UIボタン ---
+    // if (addToCupButton) {
+    //     addToCupButton.addEventListener('click', () => {
+    //         if (!colorPicker) return;
+    //         const color = colorPicker.value;
+    //         cupColors.push(color);
+    //         updateCupVisual();
+    //         updateDebugBox();
+    //     });
+    // }
+
+    const colorButtons = document.querySelectorAll('.color-btn');
+    colorButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // data-color属性から色を取得
+            const color = btn.getAttribute('data-color');
+            
+            // コップに追加
             cupColors.push(color);
             updateCupVisual();
             updateDebugBox();
+            
+            // ちょっとしたフィードバック（ボタンを押した感触の代わりにトースト等を出すならここ）
+            // console.log(`Added ${color}`); 
         });
-    }
+    });
 
     function showToast(message, ms = 1200) {
         let t = document.getElementById('__toast');

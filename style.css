@@ -23,6 +23,30 @@ button {
     box-sizing: border-box;
 }
 
+/* パレットのレイアウト（2列か3列で並べる） */
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4列で並べる */
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+/* 各色ボタンの見た目 */
+.color-btn {
+    width: 100%;
+    aspect-ratio: 1 / 1; /* 正方形にする */
+    border: 2px solid rgba(0,0,0,0.1);
+    border-radius: 50%; /* 丸くする */
+    cursor: pointer;
+    transition: transform 0.1s;
+    margin: 0; /* 既存のbutton marginをリセット */
+    padding: 0;
+}
+
+.color-btn:active {
+    transform: scale(0.9); /* 押したときに少し凹むアニメーション */
+}
+
 /* ★追加: 全体のレイアウトコンテナ */
 .main-container {
     display: flex;

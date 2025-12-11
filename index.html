@@ -13,18 +13,23 @@
 
         <div class="sidebar">
             <div class="controls-section">
-                <h3>🎨 コップ操作</h3>
-                
-                <div class="input-group">
-                    <label for="colorPicker">色:</label>
-                    <input type="color" id="colorPicker" value="#FF0000">
+                <h3>🎨 色を選んで投入</h3>
+    
+                <div id="palette-area" class="palette-grid">
+                    <button class="color-btn" data-color="#FF0000" style="background-color: #FF0000;"></button>
+                    <button class="color-btn" data-color="#00FF00" style="background-color: #00FF00;"></button>
+                    <button class="color-btn" data-color="#0000FF" style="background-color: #0000FF;"></button>
+                    <button class="color-btn" data-color="#FFFF00" style="background-color: #FFFF00;"></button>
+                    <button class="color-btn" data-color="#FF00FF" style="background-color: #FF00FF;"></button>
+                    <button class="color-btn" data-color="#00FFFF" style="background-color: #00FFFF;"></button>
+                    <button class="color-btn" data-color="#FFFFFF" style="background-color: #FFFFFF; border:1px solid #ccc;"></button>
+                    <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
                 </div>
 
                 <div id="cup-ui">
-                    <button id="addToCupButton">↑の色をコップに追加</button>
                     <div id="cupVisual" title="コップの中身"></div>
                 </div>
-                
+    
                 <button id="pourFromCupButton">コップから流す</button>
                 <p>（ボタンを押した後、キャンバスをクリック）</p>
             </div>
