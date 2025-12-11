@@ -171,8 +171,10 @@ window.addEventListener('load', () => {
             x: x, y: y,
             vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
             color: color,
-            radius: Math.random() * 2 + 2,
-            maxRadius: Math.random() * 15 + 10, 
+            // ★変更: 粒子のサイズを一回り大きくする
+            // 小さいとフィルタで消えてしまうため、最低サイズを大きく設定
+            radius: Math.random() * 5 + 8,  // 元: * 2 + 2
+            maxRadius: Math.random() * 20 + 15, // 元: * 15 + 10
             age: 0,
             maxAge: MAX_AGE_FRAMES + Math.random() * 150,
             gracePeriod: GRAVITY_GRACE_PERIOD 
