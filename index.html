@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Pouring Art - Step 14 (Layout)</title>
+    <title>Digital Pouring Art - Pop'n Layout</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,15 +15,16 @@
             <div class="controls-section">
                 <h3>🎨 色を選んで投入</h3>
     
-                <div id="palette-area" class="palette-grid">
-                    <button class="color-btn" data-color="#FF0000" style="background-color: #FF0000;"></button>
-                    <button class="color-btn" data-color="#00FF00" style="background-color: #00FF00;"></button>
-                    <button class="color-btn" data-color="#0000FF" style="background-color: #0000FF;"></button>
-                    <button class="color-btn" data-color="#FFFF00" style="background-color: #FFFF00;"></button>
-                    <button class="color-btn" data-color="#FF00FF" style="background-color: #FF00FF;"></button>
-                    <button class="color-btn" data-color="#00FFFF" style="background-color: #00FFFF;"></button>
-                    <button class="color-btn" data-color="#FFFFFF" style="background-color: #FFFFFF; border:1px solid #ccc;"></button>
-                    <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
+                <div class="popn-wrapper">
+                    <div class="popn-base">
+                        <button class="color-btn popn-btn bottom-row" data-color="#FF0000" style="--btn-color: #FF0000;"></button>
+                        <button class="color-btn popn-btn top-row"    data-color="#FFFF00" style="--btn-color: #FFFF00;"></button>
+                        <button class="color-btn popn-btn bottom-row" data-color="#00FF00" style="--btn-color: #00FF00;"></button>
+                        <button class="color-btn popn-btn top-row"    data-color="#0000FF" style="--btn-color: #0000FF;"></button>
+                        <button class="color-btn popn-btn bottom-row" data-color="#FFFFFF" style="--btn-color: #FFFFFF;"></button>
+                        <button class="color-btn popn-btn top-row"    data-color="#00FFFF" style="--btn-color: #00FFFF;"></button>
+                        <button class="color-btn popn-btn bottom-row" data-color="#FF00FF" style="--btn-color: #FF00FF;"></button>
+                    </div>
                 </div>
 
                 <div id="cup-ui">
@@ -47,7 +48,6 @@
 
     </div>
     
-    <!-- オーバーレイ: 画面を暗くし、QRやプレビューを表示 -->
     <div id="saveOverlay" class="save-overlay" aria-hidden="true">
         <div class="save-overlay-backdrop"></div>
         <div class="save-overlay-content">

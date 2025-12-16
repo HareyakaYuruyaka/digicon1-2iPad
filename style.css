@@ -2,7 +2,6 @@ body {
     font-family: sans-serif;
     background-color: #f0f0f0;
     margin: 0;
-    /* 中央揃えの指定を少し調整 */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -19,53 +18,28 @@ button {
     padding: 8px 12px;
     font-size: 14px;
     cursor: pointer;
-    width: 100%; /* ボタンを幅いっぱいに */
+    width: 100%;
     box-sizing: border-box;
 }
 
-/* パレットのレイアウト（2列か3列で並べる） */
-.palette-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr); /* 4列で並べる */
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-/* 各色ボタンの見た目 */
-.color-btn {
-    width: 100%;
-    aspect-ratio: 1 / 1; /* 正方形にする */
-    border: 2px solid rgba(0,0,0,0.1);
-    border-radius: 50%; /* 丸くする */
-    cursor: pointer;
-    transition: transform 0.1s;
-    margin: 0; /* 既存のbutton marginをリセット */
-    padding: 0;
-}
-
-.color-btn:active {
-    transform: scale(0.9); /* 押したときに少し凹むアニメーション */
-}
-
-/* ★追加: 全体のレイアウトコンテナ */
+/* --- メインレイアウト --- */
 .main-container {
     display: flex;
-    flex-direction: row; /* 横並び */
-    align-items: flex-start; /* 上揃え */
+    flex-direction: row;
+    align-items: flex-start;
     justify-content: center;
-    gap: 30px; /* 左パネルとキャンバスの間隔 */
+    gap: 30px;
     padding: 20px;
 }
 
-/* ★追加: 左サイドバー */
+/* サイドバー */
 .sidebar {
-    width: 300px; /* 固定幅 */
+    width: 300px;
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-/* コントロールセクション */
 .controls-section {
     border: 1px solid #ccc;
     padding: 20px;
@@ -76,20 +50,82 @@ button {
 .controls-section h3 { margin-top: 0; }
 .controls-section p { font-size: 12px; color: #555; margin-bottom: 0; }
 
-.input-group {
-    margin: 10px 0;
+/* --- アーケードコントローラー風レイアウト (Pop'n Style) --- */
+
+.popn-wrapper {
+    width: 100%;
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 10px;
+    margin-bottom: 20px;
+    margin-top: 10px;
 }
 
+.popn-base {
+    position: relative;
+    width: 260px; /* ボタン全体の幅 */
+    height: 100px; /* 上下の段が収まる高さ */
+    /* background: #333; border-radius: 12px; 必要なら背景を追加 */
+}
+
+/* 共通ボタンスタイル */
+.color-btn.popn-btn {
+    position: absolute;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    /* 立体感のあるグラデーション */
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), var(--btn-color) 60%, rgba(0,0,0,0.4));
+    box-shadow: 
+        0 4px 0 rgba(0,0,0,0.2), /* 厚み */
+        0 6px 6px rgba(0,0,0,0.3), /* 影 */
+        inset 0 0 5px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.05s, box-shadow 0.05s;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.color-btn.popn-btn:active {
+    transform: translateY(4px);
+    box-shadow: 
+        0 0 0 rgba(0,0,0,0.2), 
+        0 2px 3px rgba(0,0,0,0.3),
+        inset 0 0 10px rgba(0,0,0,0.4);
+}
+
+/* 白ボタンの視認性調整 */
+.color-btn.popn-btn[data-color="#FFFFFF"] {
+    background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0 60%, #aaa);
+}
+
+/* --- 配置 (絶対座標でジグザグに) --- */
+/* ボタン直径45px + 隙間少々 */
+
+/* 1. 下段: 赤 */
+.popn-btn:nth-child(1) { left: 10px; bottom: 5px; z-index: 10; }
+/* 2. 上段: 黄 */
+.popn-btn:nth-child(2) { left: 45px; bottom: 45px; z-index: 5; }
+/* 3. 下段: 緑 */
+.popn-btn:nth-child(3) { left: 80px; bottom: 5px; z-index: 10; }
+/* 4. 上段: 青 */
+.popn-btn:nth-child(4) { left: 115px; bottom: 45px; z-index: 5; }
+/* 5. 下段: 白 */
+.popn-btn:nth-child(5) { left: 150px; bottom: 5px; z-index: 10; }
+/* 6. 上段: シアン */
+.popn-btn:nth-child(6) { left: 185px; bottom: 45px; z-index: 5; }
+/* 7. 下段: マゼンタ */
+.popn-btn:nth-child(7) { left: 220px; bottom: 5px; z-index: 10; }
+
+
+/* --- コップ表示 --- */
 #cup-ui {
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 15px 0;
-    flex-direction: column; /* 縦並びに変更してボタンとコップを見やすく */
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -111,18 +147,14 @@ button {
     border-top: 1px solid rgba(0,0,0,0.1);
 }
 
-/* キャンバスエリア */
-.canvas-area {
-    /* 必要に応じてスタイル追加 */
-}
-
+/* --- キャンバスエリア --- */
 #canvas-stack {
     position: relative;
     width: 800px; 
     height: 600px;
     border: 1px solid #999;
     background-color: #fff;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 少し影をつけて浮き上がらせる */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 #permanentCanvas, #particleCanvas {
@@ -130,16 +162,16 @@ button {
     top: 0; left: 0;
     width: 100%; height: 100%;
     background-color: transparent;
-    filter: blur(30px) contrast(10);
+    filter: blur(30px) contrast(10); /* アート風エフェクト */
 }
 #particleCanvas { z-index: 2; cursor: default; }
 #permanentCanvas { z-index: 1; background-color: #ffffff; }
 
-/* オーバーレイ（保存用） */
+/* --- 保存オーバーレイ --- */
 .save-overlay {
     position: fixed;
     inset: 0;
-    display: none; /* 表示は JS で切り替え */
+    display: none;
     z-index: 9999;
     align-items: center;
     justify-content: center;
@@ -171,7 +203,7 @@ button {
 .save-actions button { width: 100%; max-width: 320px; }
 .airdrop-hint { font-size:13px; color:#2d2d2d; background:#f8f8f8; padding:8px 10px; border-radius:8px; border:1px solid #eee; max-width:360px; margin:6px auto 0; }
 
-/* トースト（簡易） */
+/* トースト通知 */
 .toast {
     position: fixed;
     left: 50%;
@@ -188,15 +220,19 @@ button {
 }
 .toast.show { opacity: 1; }
 
-/* ハイライト用アニメーション */
 @keyframes airdropHighlight {
     0% { transform: translateY(0); box-shadow: 0 0 0 rgba(30,136,229,0); background-color: #f8f8f8; }
     10% { transform: translateY(-6px); background-color: #ffffff; box-shadow: 0 18px 40px rgba(30,136,229,0.12); }
     50% { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(30,136,229,0.10); }
- 100% { transform: translateY(0); box-shadow: 0 0 0 rgba(30,136,229,0); background-color: #f8f8f8; }
+    100% { transform: translateY(0); box-shadow: 0 0 0 rgba(30,136,229,0); background-color: #f8f8f8; }
 }
 .airdrop-hint.highlight {
     animation: airdropHighlight 1.2s ease-in-out 1;
 }
 .fallback-area img { max-width: 320px; height: auto; display: block; margin: 8px auto; border: 1px solid #ddd; }
 .fallback-area a { display: inline-block; margin-top: 8px; padding: 8px 12px; background: #1e88e5; color: #fff; text-decoration: none; border-radius: 6px; }
+
+/* 画面向き警告 */
+#orientation-lock-overlay {
+    display: none;
+}

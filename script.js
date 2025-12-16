@@ -87,17 +87,7 @@ window.addEventListener('load', () => {
         mouse.y = pos.y;
     });
 
-    // // --- UIボタン ---
-    // if (addToCupButton) {
-    //     addToCupButton.addEventListener('click', () => {
-    //         if (!colorPicker) return;
-    //         const color = colorPicker.value;
-    //         cupColors.push(color);
-    //         updateCupVisual();
-    //         updateDebugBox();
-    //     });
-    // }
-
+    // カラーボタンのリスナー設定
     const colorButtons = document.querySelectorAll('.color-btn');
     colorButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -108,9 +98,6 @@ window.addEventListener('load', () => {
             cupColors.push(color);
             updateCupVisual();
             updateDebugBox();
-            
-            // ちょっとしたフィードバック（ボタンを押した感触の代わりにトースト等を出すならここ）
-            // console.log(`Added ${color}`); 
         });
     });
 
@@ -244,7 +231,6 @@ window.addEventListener('load', () => {
         const showStatus = saveOverlay && saveOverlay.getAttribute('aria-hidden') === 'false';
         if (showStatus) saveStatus.textContent = '共有を試みています...';
         
-        // 描画処理が重いため少し遅延させてUIを表示させる
         setTimeout(() => {
             const dataURL = generateCombinedDataURL();
             fetch(dataURL).then(r => r.blob()).then(async (blob) => {
@@ -322,33 +308,26 @@ window.addEventListener('load', () => {
         previewImage.src = '';
     }
 
-    // ★重要変更: CSSの filter: blur(10px) contrast(20) を手動計算で再現
     function generateCombinedDataURL(width, quality, mimeType) {
         const w = width || permanentCanvas.width;
         const h = Math.round((permanentCanvas.height / permanentCanvas.width) * w);
         
-        // 作業用キャンバス（透明）を作成
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = w; tempCanvas.height = h;
         const tCtx = tempCanvas.getContext('2d');
         
-        // 元の絵を描画（白背景なし、透明な上に描くのがポイント）
         tCtx.drawImage(permanentCanvas, 0, 0, permanentCanvas.width, permanentCanvas.height, 0, 0, w, h);
         tCtx.drawImage(particleCanvas, 0, 0, particleCanvas.width, particleCanvas.height, 0, 0, w, h);
 
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        // 1. ぼかし処理（半径を6px程度に調整して強すぎないように）
-        // Box Blurを2回かけてガウシアンに近づける
         fastBlur(imageData, 6); 
         fastBlur(imageData, 6);
 
-        // 2. コントラスト処理（強力にかける＝CSSのcontrast(20)相当）
-        applyHighContrast(imageData, 10); // Factor 20
+        applyHighContrast(imageData, 10);
 
         tCtx.putImageData(imageData, 0, 0);
 
-        // 最終出力用（白背景と合成）
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = w; finalCanvas.height = h;
         const fCtx = finalCanvas.getContext('2d');
@@ -362,17 +341,10 @@ window.addEventListener('load', () => {
         return finalCanvas.toDataURL('image/png');
     }
 
-    // --- 画像処理アルゴリズム ---
-    
-    // CSSの contrast(20) を再現する計算
-    // contrast(N) は、(color - 128) * N + 128 のような計算を行い、グレーを基準に色を両極端に飛ばします
     function applyHighContrast(imageData, factor) {
         const data = imageData.data;
-        // 事前にルックアップテーブルを作成して高速化
         const table = new Uint8Array(256);
         for (let i = 0; i < 256; i++) {
-            // コントラストの計算式: (value - 0.5) * factor + 0.5
-            // 0..255の範囲では: (i - 128) * factor + 128
             let v = (i - 128) * factor + 128;
             if (v < 0) v = 0;
             if (v > 255) v = 255;
@@ -380,30 +352,25 @@ window.addEventListener('load', () => {
         }
 
         for (let i = 0; i < data.length; i += 4) {
-            // RGBにもAlphaにも適用
             data[i]     = table[data[i]];     // R
             data[i + 1] = table[data[i + 1]]; // G
             data[i + 2] = table[data[i + 2]]; // B
             data[i + 3] = table[data[i + 3]]; // Alpha
             
-            // Alphaがしきい値以下なら強制的に0にする（ゴミ消し）
             if (data[i+3] < 100) data[i+3] = 0;
         }
     }
 
-    // 高速ボックスぼかし
     function fastBlur(imageData, radius) {
         if (isNaN(radius) || radius < 1) return;
         const width = imageData.width;
         const height = imageData.height;
         const data = imageData.data;
 
-        // 水平方向
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 let r = 0, g = 0, b = 0, a = 0;
                 let count = 0;
-                // 近傍ピクセルの平均を取る
                 for (let i = -radius; i <= radius; i += 2) { 
                     const nx = x + i;
                     if (nx >= 0 && nx < width) {
@@ -416,7 +383,6 @@ window.addEventListener('load', () => {
                 data[idx] = r/count; data[idx+1] = g/count; data[idx+2] = b/count; data[idx+3] = a/count;
             }
         }
-        // 垂直方向
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
                 let r = 0, g = 0, b = 0, a = 0;
