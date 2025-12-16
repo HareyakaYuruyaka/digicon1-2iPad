@@ -43,7 +43,7 @@ button {
 /* 追記: キャンバスエリアの位置調整 */
 .canvas-area {
     /* 変更点: 上に30ptの余白を追加して下げる */
-    margin-top: 100pt; 
+    margin-top: 500pt; 
     
     /* (任意) もしキャンバスを画面中央寄りに置きたい場合は以下を追加してください */
     /* margin-left: auto; */
@@ -56,6 +56,7 @@ button {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    margin-right: 80px; /* 必要に応じて追加 */
 }
 
 .controls-section {
