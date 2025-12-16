@@ -26,10 +26,28 @@ button {
 .main-container {
     display: flex;
     flex-direction: row;
-    align-items: center;
-    justify-content: center;
+    align-items: center; /* 垂直方向は中央揃えのまま */
+    
+    /* 変更点: 中央揃え(center)をやめて左詰め(flex-start)にし、幅を広げる */
+    justify-content: flex-start; 
+    width: 100%;
+    
+    /* 左端に少し余白を持たせる（"かなり左"とのことなので、適度なパディングを設定） */
+    padding-left: 50px; 
+    
     gap: 40px;
-    padding: 10px;
+    padding-right: 10px; /* 右側のパディングも調整 */
+    box-sizing: border-box; /* width: 100% と padding を共存させるため */
+}
+
+/* 追記: キャンバスエリアの位置調整 */
+.canvas-area {
+    /* 変更点: 上に30ptの余白を追加して下げる */
+    margin-top: 30pt; 
+    
+    /* (任意) もしキャンバスを画面中央寄りに置きたい場合は以下を追加してください */
+    /* margin-left: auto; */
+    /* margin-right: auto; */
 }
 
 /* サイドバー */
