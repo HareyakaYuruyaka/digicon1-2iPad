@@ -28,9 +28,9 @@ button {
     flex-direction: row;
     
     /* 【重要】ここを center から flex-start に変更します */
-    align-items: left; 
+    align-items: flex-start; 
     
-    justify-content: right; 
+    justify-content: center; 
     width: 100%;
     padding-left: 50px; 
     gap: 100px; /* サイドバーとの距離 */
