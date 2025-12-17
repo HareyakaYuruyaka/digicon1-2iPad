@@ -2,7 +2,7 @@
 
 body {
     font-family: 'M PLUS Rounded 1c', "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-    background-color: #f4f7f6; /* 少し明るく清潔なグレー */
+    background-color: #f4f7f6;
     margin: 0;
     display: flex;
     flex-direction: column;
@@ -33,15 +33,15 @@ body {
     display: flex;
     flex-direction: row;
     align-items: flex-start; 
-    justify-content: center; /* 全体を中央寄せ */
+    justify-content: center;
     width: 100%;
     max-width: 1200px;
-    gap: 60px; /* サイドバーとキャンバスの間隔 */
+    gap: 60px;
     padding: 0 20px 60px 20px;
     box-sizing: border-box; 
 }
 
-/* --- サイドバー (カードデザイン化) --- */
+/* --- サイドバー --- */
 .sidebar {
     width: 340px;
     display: flex;
@@ -54,7 +54,7 @@ body {
     border-radius: 20px;
     padding: 20px;
     position: relative;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* 柔らかい影 */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     text-align: center;
     border: 1px solid rgba(0,0,0,0.02);
 }
@@ -79,7 +79,7 @@ body {
 }
 
 .instruction-box {
-    background: #eaf2f8; /* 薄い青背景で強調 */
+    background: #eaf2f8;
     border: 1px solid #d6eaf8;
 }
 .instruction-box p {
@@ -117,36 +117,27 @@ button {
     box-shadow: 0 2px 0 rgba(0,0,0,0.1);
 }
 
-/* メインボタン（流す） */
 .primary-btn {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #fff;
     box-shadow: 0 6px 15px rgba(79, 172, 254, 0.4);
 }
-.primary-btn:hover {
-    filter: brightness(1.05);
-}
+.primary-btn:hover { filter: brightness(1.05); }
 
-/* リセットボタン */
 .danger-btn {
     background: #fff;
     color: #e74c3c;
     border: 2px solid #fadbd8;
     box-shadow: none;
 }
-.danger-btn:hover {
-    background: #fdf2f2;
-}
+.danger-btn:hover { background: #fdf2f2; }
 
-/* 保存ボタン */
 .success-btn {
     background: #2ecc71;
     color: #fff;
     box-shadow: 0 6px 15px rgba(46, 204, 113, 0.3);
 }
-.success-btn:hover {
-    background: #27ae60;
-}
+.success-btn:hover { background: #27ae60; }
 
 .sub-controls {
     display: flex;
@@ -175,10 +166,7 @@ button {
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.8);
     background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), var(--btn-color) 60%, rgba(0,0,0,0.2));
-    box-shadow: 
-        0 4px 0 rgba(0,0,0,0.2), 
-        0 8px 10px rgba(0,0,0,0.15), 
-        inset 0 0 5px rgba(255,255,255,0.2);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 8px 10px rgba(0,0,0,0.15), inset 0 0 5px rgba(255,255,255,0.2);
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s;
     -webkit-tap-highlight-color: transparent;
@@ -187,11 +175,9 @@ button {
     transform: translateY(4px) scale(0.95);
     box-shadow: 0 0 0 rgba(0,0,0,0.2);
 }
-/* 白ボタンの視認性 */
 .color-btn.popn-btn[data-color="#FFFFFF"] {
     background: radial-gradient(circle at 30% 30%, #fff, #ecf0f1 60%, #bdc3c7);
 }
-/* ボタン配置 */
 .popn-btn:nth-child(1) { left: 10px; bottom: 5px; z-index: 10; }
 .popn-btn:nth-child(2) { left: 45px; bottom: 45px; z-index: 5; }
 .popn-btn:nth-child(3) { left: 80px; bottom: 5px; z-index: 10; }
@@ -200,7 +186,6 @@ button {
 .popn-btn:nth-child(6) { left: 185px; bottom: 45px; z-index: 5; }
 .popn-btn:nth-child(7) { left: 220px; bottom: 5px; z-index: 10; }
 
-/* コップ表示 */
 #cup-ui {
     display: flex;
     align-items: center;
@@ -215,7 +200,7 @@ button {
     border-radius: 0 0 12px 12px;
     display: flex;
     flex-direction: column-reverse;
-    overflow: hidden; /* 中身が丸みからはみ出ないように */
+    overflow: hidden;
     box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
 }
 .cup-color-layer {
@@ -235,22 +220,15 @@ button {
     position: relative;
     width: 800px; 
     height: 600px;
-    /* 枠線は無くし、マスクで境界を作る */
-    /* border: 1px solid #999; */
     background-color: #fff;
-    
-    /* 深い影をつけて浮いているように見せる */
     box-shadow: 0 20px 50px rgba(0,0,0,0.15);
     border-radius: 4px; 
-    
-    /* マスクのために必須 */
-    overflow: hidden; 
+    overflow: hidden; /* はみ出し防止 */
 }
 
 /* ★なめらかさの調整★
-   保存画像のJS処理に近づけるため、Blurを大幅に減らし(8px-12px)、
-   その分Contrastを極端に上げる(100以上)ことで、
-   ベクターアートのような「パキッとした液体」を表現します。
+   blurを15pxまで上げ、contrastで引き締めることで
+   ジャギジャギ感を消し、滑らかなベクター調にします
 */
 #permanentCanvas, #particleCanvas {
     position: absolute;
@@ -258,8 +236,8 @@ button {
     width: 100%; height: 100%;
     background-color: transparent;
     
-    /* 保存画像に近い、くっきりした設定 */
-    filter: blur(8px) contrast(120);
+    /* 変更点: blur(15px) contrast(50) */
+    filter: blur(15px) contrast(50);
     
     /* 端の処理のために少し拡大して、マスクで隠す */
     transform: scale(1.02);
@@ -269,23 +247,13 @@ button {
 #particleCanvas { z-index: 2; cursor: default; }
 #permanentCanvas { z-index: 1; background-color: #ffffff; }
 
-/* ★キャンバスマスク（額縁）★ 
-   キャンバスのぼやけた端を隠すための枠
-   pointer-events: none でタッチ操作を阻害しないようにする
-*/
+/* キャンバスマスク（額縁） */
 .canvas-mask {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     z-index: 10;
     pointer-events: none;
-    
-    /* 内側に枠線を描く (背景色と同じ色に設定して馴染ませる) */
-    /* ここではキャンバス背景の白(#fff)で縁取って、綺麗に断ち落とす */
-    border: 20px solid #fff; 
-    
-    /* もし外側の背景色(#f4f7f6)に合わせたい場合はこちら */
-    /* border: 20px solid #f4f7f6; */
-    
+    border: 20px solid #fff; /* 背景色で縁取り */
     box-sizing: border-box;
 }
 
@@ -299,12 +267,8 @@ button {
     justify-content: center;
     backdrop-filter: blur(5px);
 }
-.save-overlay[aria-hidden="false"] {
-    display: flex;
-}
-.save-overlay-backdrop {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.6);
-}
+.save-overlay[aria-hidden="false"] { display: flex; }
+.save-overlay-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
 .save-overlay-content {
     position: relative;
     z-index: 2;
@@ -340,10 +304,7 @@ button {
     line-height: 1.5;
 }
 .airdrop-hint strong { color: #333; display: block; margin-bottom: 4px; }
-
-.airdrop-hint.highlight {
-    animation: highlightAnim 1.5s ease-out;
-}
+.airdrop-hint.highlight { animation: highlightAnim 1.5s ease-out; }
 @keyframes highlightAnim {
     0% { background: #e8f8f5; transform: scale(0.98); }
     50% { background: #fff; transform: scale(1.02); }
@@ -368,7 +329,7 @@ button {
 /* トースト通知 */
 .toast {
     position: fixed;
-    top: 20px; /* 上部に変更 */
+    top: 20px;
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
     background: rgba(44, 62, 80, 0.9);
@@ -383,10 +344,6 @@ button {
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     pointer-events: none;
 }
-.toast.show { 
-    opacity: 1; 
-    transform: translateX(-50%) translateY(0);
-}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* 横向き警告 */
 #orientation-lock-overlay { display: none; }

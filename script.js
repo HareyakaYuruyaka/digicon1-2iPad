@@ -43,7 +43,6 @@ window.addEventListener('load', () => {
     // --- 座標変換関数 ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
-        // 実際の表示サイズ(rect)と内部解像度(.width)の比率を使って座標変換
         const scaleX = particleCanvas.width / rect.width;
         const scaleY = particleCanvas.height / rect.height;
         return {
@@ -84,8 +83,6 @@ window.addEventListener('load', () => {
             const color = btn.getAttribute('data-color');
             cupColors.push(color);
             updateCupVisual();
-            
-            // ボタンを押したときに少しアニメーションさせるなどの演出があればここに
         });
     });
 
@@ -167,7 +164,6 @@ window.addEventListener('load', () => {
     }
 
     function handleOrientation(event) {
-        // 傾きによる加速度もスケールに合わせて大きくする
         const sensitivity = 0.05 * SCALE; 
         if (event.gamma !== null && event.beta !== null) {
             tilt.x = event.beta * sensitivity; 
@@ -262,8 +258,9 @@ window.addEventListener('load', () => {
 
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        // 保存時の画質処理（ここは変えず、画面表示をこれに近づけた）
-        const blurRadius = 6 * SCALE;
+        // 保存時の画質処理
+        // CSSの表示(15px)に合わせて調整 (5 * 3 = 15px)
+        const blurRadius = 5 * SCALE;
         fastBlur(imageData, blurRadius); 
         fastBlur(imageData, blurRadius);
 
@@ -376,8 +373,10 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        // 面積計算もスケールに合わせる
-        const AREA_PER_UNIT = 100 * SCALE * SCALE; 
+        // ★修正点★ 面積（量）を決める係数
+        // 100(元の値) から 40 に減らしました
+        const AREA_PER_UNIT = 40 * SCALE * SCALE; 
+        
         let currentTotalArea = 0;
 
         for (const color of cupColors) {
