@@ -26,37 +26,38 @@ button {
 .main-container {
     display: flex;
     flex-direction: row;
-    align-items: center; /* 垂直方向は中央揃えのまま */
     
-    /* 変更点: 中央揃え(center)をやめて左詰め(flex-start)にし、幅を広げる */
+    /* 【重要】ここを center から flex-start に変更します */
+    align-items: flex-start; 
+    
     justify-content: flex-start; 
     width: 100%;
-    
-    /* 左端に少し余白を持たせる（"かなり左"とのことなので、適度なパディングを設定） */
     padding-left: 50px; 
+    gap: 100px; /* サイドバーとの距離 */
+    padding-right: 10px; 
+    box-sizing: border-box; 
     
-    gap: 100px;
-    padding-right: 10px; /* 右側のパディングも調整 */
-    box-sizing: border-box; /* width: 100% と padding を共存させるため */
+    /* 画面全体の高さに対してレイアウトする場合、高さ指定が必要なこともあります */
+    /* min-height: 100vh; */ 
 }
 
 /* 追記: キャンバスエリアの位置調整 */
 .canvas-area {
-    /* 変更点: 上に30ptの余白を追加して下げる */
-    margin-top: 500pt; 
-    
-    /* (任意) もしキャンバスを画面中央寄りに置きたい場合は以下を追加してください */
-    /* margin-left: auto; */
-    /* margin-right: auto; */
+    /* flex-start（上揃え）になったので、ここでの指定が「上からの距離」になります */
+    /* 30pt (約40px) 程度下げる場合 */
+    margin-top: 40px; 
 }
 
-/* サイドバー */
+/* サイドバーの位置調整（必要なら） */
 .sidebar {
     width: 300px;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-right: 80px; /* 必要に応じて追加 */
+    margin-right: 0; /* gapで調整しているので0でOKですが、微調整用 */
+    
+    /* サイドバーも少し下げたい場合はここに margin-top を追加 */
+    margin-top: 0px; 
 }
 
 .controls-section {
