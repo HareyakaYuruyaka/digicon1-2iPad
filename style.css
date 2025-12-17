@@ -30,7 +30,7 @@ button {
     /* 【重要】ここを center から flex-start に変更します */
     align-items: flex-start; 
     
-    justify-content: center; 
+    justify-content: left; 
     width: 100%;
     padding-left: 10px; 
     gap: 100px; /* サイドバーとの距離 */
@@ -46,6 +46,7 @@ button {
     /* flex-start（上揃え）になったので、ここでの指定が「上からの距離」になります */
     /* 30pt (約40px) 程度下げる場合 */
     margin-top: 100px; 
+    margin-right: 20;
 }
 
 /* サイドバーの位置調整（必要なら） */
@@ -55,7 +56,7 @@ button {
     flex-direction: column;
     gap: 15px;
     margin-right: 0; /* gapで調整しているので0でOKですが、微調整用 */
-    margin-left: -10;
+    margin-left: 0;
     
     /* サイドバーも少し下げたい場合はここに margin-top を追加 */
     margin-top: 0px; 
