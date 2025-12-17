@@ -17,21 +17,17 @@ h1 {
 .main-container {
     display: flex;
     flex-direction: row;
-    
-    /* 【重要】ここを center から flex-start に変更 */
     align-items: flex-start; 
-    
     justify-content: flex-start; 
     width: 100%;
-    
     padding-left: 50px; 
-    gap: 80px; /* サイドバーとキャンバスの間の距離 */
+    gap: 80px; 
     padding-right: 10px; 
     box-sizing: border-box; 
     padding-bottom: 50px;
 }
 
-/* サイドバー全体の調整 */
+/* サイドバー */
 .sidebar {
     width: 320px;
     display: flex;
@@ -41,14 +37,12 @@ h1 {
     font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
 }
 
-/* キャンバスエリアの位置調整 */
+/* キャンバスエリア */
 .canvas-area {
-    /* flex-start なので margin-top が素直に効きます */
-    /* 30pt ≈ 40px 程度下げて配置 */
     margin-top: 40px; 
 }
 
-/* --- 手順ごとのセクション装飾 --- */
+/* --- 手順ごとのセクション --- */
 .step-section {
     background: #fff;
     border-radius: 16px;
@@ -85,18 +79,16 @@ h1 {
     margin: 10px 0 0 0;
 }
 
-/* --- ボタンのスタイル刷新 --- */
+/* --- ボタン --- */
 button {
     cursor: pointer;
     border: none;
     outline: none;
     font-family: inherit;
-    /* デフォルトのスタイルをリセット */
     width: auto; 
     margin: 0;
 }
 
-/* アクションボタン共通 */
 .action-btn {
     width: 100%;
     padding: 16px;
@@ -109,7 +101,7 @@ button {
     gap: 8px;
     transition: transform 0.1s, box-shadow 0.1s;
     box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-    background: #fff; /* デフォルト */
+    background: #fff; 
     border: 1px solid #ddd;
 }
 
@@ -118,7 +110,6 @@ button {
     box-shadow: 0 1px 0 rgba(0,0,0,0.1);
 }
 
-/* メインボタン（流す）: 鮮やかな青/水色系 */
 .primary-btn {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     color: #fff;
@@ -128,7 +119,6 @@ button {
 }
 .primary-btn:active { box-shadow: 0 1px 0 #2c90d3; }
 
-/* リセットボタン: 注意を引く赤系 */
 .danger-btn {
     background: #fff0f0;
     color: #d63031;
@@ -139,7 +129,6 @@ button {
 }
 .danger-btn:active { box-shadow: 0 1px 0 #ffcccc; }
 
-/* 保存ボタン: 安心感のある緑系 */
 .success-btn {
     background: #eaffea;
     color: #00b894;
@@ -150,7 +139,6 @@ button {
 }
 .success-btn:active { box-shadow: 0 1px 0 #ccf5e8; }
 
-/* サブコントロールエリア */
 .sub-controls {
     display: flex;
     flex-direction: column;
@@ -158,7 +146,7 @@ button {
     margin-top: 10px;
 }
 
-/* --- アーケードコントローラー風レイアウト (Pop'n Style) --- */
+/* Pop'n Style */
 .popn-wrapper {
     width: 100%;
     display: flex;
@@ -166,14 +154,11 @@ button {
     margin-bottom: 20px;
     margin-top: 10px;
 }
-
 .popn-base {
     position: relative;
     width: 260px;
     height: 100px;
 }
-
-/* 色ボタン */
 .color-btn.popn-btn {
     position: absolute;
     width: 45px;
@@ -195,8 +180,6 @@ button {
 .color-btn.popn-btn[data-color="#FFFFFF"] {
     background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0 60%, #aaa);
 }
-
-/* ボタン配置 */
 .popn-btn:nth-child(1) { left: 10px; bottom: 5px; z-index: 10; }
 .popn-btn:nth-child(2) { left: 45px; bottom: 45px; z-index: 5; }
 .popn-btn:nth-child(3) { left: 80px; bottom: 5px; z-index: 10; }
@@ -205,7 +188,7 @@ button {
 .popn-btn:nth-child(6) { left: 185px; bottom: 45px; z-index: 5; }
 .popn-btn:nth-child(7) { left: 220px; bottom: 5px; z-index: 10; }
 
-/* --- コップ表示 --- */
+/* コップ */
 #cup-ui {
     display: flex;
     align-items: center;
@@ -214,7 +197,6 @@ button {
     flex-direction: column;
     gap: 10px;
 }
-
 #cupVisual {
     width: 60px;
     height: 120px;
@@ -227,14 +209,13 @@ button {
     overflow-x: hidden;
     box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
 }
-
 .cup-color-layer {
     width: 100%;
     min-height: 15px;
     border-top: 1px solid rgba(0,0,0,0.1);
 }
 
-/* --- キャンバスエリア --- */
+/* キャンバス */
 #canvas-stack {
     position: relative;
     width: 800px; 
@@ -243,7 +224,6 @@ button {
     background-color: #fff;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
-
 #permanentCanvas, #particleCanvas {
     position: absolute;
     top: 0; left: 0;
@@ -254,7 +234,7 @@ button {
 #particleCanvas { z-index: 2; cursor: default; }
 #permanentCanvas { z-index: 1; background-color: #ffffff; }
 
-/* --- 保存オーバーレイ --- */
+/* 保存オーバーレイ */
 .save-overlay {
     position: fixed;
     inset: 0;
@@ -284,13 +264,11 @@ button {
 .close-overlay {
     position: absolute; right: 8px; top: 8px; border: none; background: transparent; font-size: 18px; cursor: pointer;
 }
-.qr-container { width: 320px; height: 320px; margin: 10px auto; }
 .fallback-area { display: none; text-align: center; }
 .save-actions { display:flex; flex-direction:column; gap:8px; align-items:center; }
 .save-actions button { width: 100%; max-width: 320px; }
 .airdrop-hint { font-size:13px; color:#2d2d2d; background:#f8f8f8; padding:8px 10px; border-radius:8px; border:1px solid #eee; max-width:360px; margin:6px auto 0; }
 
-/* トースト通知 */
 .toast {
     position: fixed;
     left: 50%;

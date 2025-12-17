@@ -25,7 +25,6 @@ window.addEventListener('load', () => {
     let tilt = { x: 0, y: 0 };
     let isSensorActive = false; 
 
-    // --- 簡易デバッグボックス (削除済み) ---
     function updateDebugBox() {
         // 表示しない
     }
@@ -76,10 +75,7 @@ window.addEventListener('load', () => {
     const colorButtons = document.querySelectorAll('.color-btn');
     colorButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            // data-color属性から色を取得
             const color = btn.getAttribute('data-color');
-            
-            // コップに追加
             cupColors.push(color);
             updateCupVisual();
             updateDebugBox();
@@ -174,16 +170,14 @@ window.addEventListener('load', () => {
         }
     }
 
-    // --- 画像保存・QR・共有まわり ---
+    // --- 画像保存・共有まわり ---
     const saveImageButton = document.getElementById('saveImageButton');
     const saveOverlay = document.getElementById('saveOverlay');
-    const qrContainer = document.getElementById('qrContainer');
     const fallbackArea = document.getElementById('fallbackArea');
     const previewImage = document.getElementById('previewImage');
     const downloadLink = document.getElementById('downloadLink');
     const closeSaveOverlay = document.getElementById('closeSaveOverlay');
     const shareToPhoneButton = document.getElementById('shareToPhoneButton');
-    const regenQrButton = document.getElementById('regenQrButton');
     const saveStatus = document.getElementById('saveStatus');
     const airdropHint = document.getElementById('airdropHint');
 
@@ -191,20 +185,22 @@ window.addEventListener('load', () => {
         openSaveOverlay();
     });
     closeSaveOverlay && closeSaveOverlay.addEventListener('click', () => closeSaveOverlayFunc());
+    
+    // ここで共有処理を呼び出す
     shareToPhoneButton && shareToPhoneButton.addEventListener('click', () => {
         shareCurrentImageToPhone();
-    });
-    regenQrButton && regenQrButton.addEventListener('click', () => {
-        attemptGenerateQRWithRetries();
     });
 
     function openSaveOverlay() {
         if (!saveOverlay) return;
         saveOverlay.setAttribute('aria-hidden', 'false');
-        qrContainer.style.display = 'none';
-        fallbackArea.style.display = '';
-        shareCurrentImageToPhone();
-        attemptGenerateQRWithRetries();
+        
+        // フォールバックエリアは初期状態では隠す
+        fallbackArea.style.display = 'none';
+        
+        // ステータスリセット
+        if (saveStatus) saveStatus.textContent = '';
+
         if (airdropHint) {
             airdropHint.classList.remove('highlight');
             void airdropHint.offsetWidth;
@@ -225,72 +221,33 @@ window.addEventListener('load', () => {
                         await navigator.share({ files: [file], title: 'Pouring Art' });
                         if (showStatus) {
                             saveStatus.textContent = '共有しました。';
-                            closeSaveOverlayFunc();
+                            // 共有成功時はそのまま閉じるか、お好みで
+                            // closeSaveOverlayFunc();
                         }
                     } catch (err) {
-                        if (showStatus) saveStatus.textContent = '共有がキャンセルされました。';
+                        if (showStatus) saveStatus.textContent = '共有がキャンセルまたは失敗しました。';
+                        // 失敗した場合もダウンロードリンクを表示する
+                        showFallback(dataURL);
                     }
                 } else {
-                    if (showStatus) saveStatus.textContent = 'このブラウザは共有機能未対応です。';
-                    try {
-                        previewImage.src = dataURL;
-                        downloadLink.href = dataURL;
-                        if (saveOverlay) {
-                            saveOverlay.setAttribute('aria-hidden', 'false');
-                            qrContainer.style.display = 'none';
-                            fallbackArea.style.display = '';
-                        }
-                    } catch (err) { console.error(err); }
+                    if (showStatus) saveStatus.textContent = 'このブラウザは共有機能未対応です。以下から保存してください。';
+                    showFallback(dataURL);
                 }
             }).catch(err => { console.error(err); });
         }, 50);
     }
-
-    function attemptGenerateQRWithRetries() {
-        if(!saveStatus) return;
-        saveStatus.textContent = 'QR生成中...';
-        const MAX_QR_CHARS = 1200; 
-        const widths = [320, 240, 200];
-        const qualities = [0.7, 0.5, 0.3];
-
-        setTimeout(() => {
-            (async () => {
-                let found = false;
-                for (let w of widths) {
-                    for (let q of qualities) {
-                        const thumb = generateCombinedDataURL(w, q, 'image/jpeg');
-                        if (thumb.length <= MAX_QR_CHARS) {
-                            const api = 'https://chart.googleapis.com/chart?chs=320x320&cht=qr&chl=' + encodeURIComponent(thumb);
-                            qrContainer.innerHTML = '';
-                            const img = document.createElement('img');
-                            img.src = api;
-                            img.style.maxWidth = '100%';
-                            qrContainer.appendChild(img);
-                            qrContainer.style.display = '';
-                            fallbackArea.style.display = 'none';
-                            saveStatus.textContent = `QR生成成功`;
-                            found = true;
-                            return;
-                        }
-                    }
-                }
-                if (!found) {
-                    saveStatus.textContent = '画像が大きすぎるためQR表示できません。直接ダウンロードしてください。';
-                    const full = generateCombinedDataURL();
-                    previewImage.src = full;
-                    downloadLink.href = full;
-                    qrContainer.style.display = 'none';
-                    fallbackArea.style.display = '';
-                }
-            })();
-        }, 50);
+    
+    function showFallback(dataURL) {
+        previewImage.src = dataURL;
+        downloadLink.href = dataURL;
+        fallbackArea.style.display = '';
     }
 
     function closeSaveOverlayFunc() {
         if (!saveOverlay) return;
         saveOverlay.setAttribute('aria-hidden', 'true');
-        qrContainer.innerHTML = '';
         previewImage.src = '';
+        fallbackArea.style.display = 'none';
     }
 
     function generateCombinedDataURL(width, quality, mimeType) {
@@ -391,19 +348,14 @@ window.addEventListener('load', () => {
         isPourMode = mode;
         if (isPourMode) {
             particleCanvas.style.cursor = "copy";
-            
-            // ボタンの文言切り替え（新しいStep表示に合わせるならここはシンプルで良いかも）
             pourFromCupButton.innerHTML = "<span class='btn-icon'>👆</span> 流す場所をキャンバスでクリック";
             pourFromCupButton.style.background = "#fffae6"; 
             pourFromCupButton.style.color = "#d48806";
             pourFromCupButton.style.borderColor = "#ffe58f";
-
         } else {
             particleCanvas.style.cursor = "default";
-            
-            // 元に戻す
             pourFromCupButton.innerHTML = "<span class='btn-icon'>💧</span> 準備OK！コップから流す";
-            pourFromCupButton.style.background = ""; // クラスのCSSに戻る
+            pourFromCupButton.style.background = ""; 
             pourFromCupButton.style.color = "";
             pourFromCupButton.style.borderColor = "";
         }

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Pouring into the Display 2</h1>
+    <h1>Pouring into the Display 3</h1>
     
     <div class="main-container">
 
@@ -41,7 +41,7 @@
 
             <div class="step-section instruction-box">
                 <div class="step-label">Step 3</div>
-                <p>キャンバスをタッチして<br>iPadを傾けて描こう！📱</p>
+                <p>キャンバスをタッチして<br>iPadを傾けてみよう！📱</p>
             </div>
 
             <div class="sub-controls">
@@ -64,17 +64,14 @@
         <div class="save-overlay-content">
             <button id="closeSaveOverlay" class="close-overlay">✕</button>
 
-            <div id="qrContainer" class="qr-container"></div>
-
             <div id="saveActions" class="save-actions">
                 <button id="shareToPhoneButton" class="action-btn success-btn">スマホに送る（AirDrop / 共有）</button>
-                <button id="regenQrButton" class="action-btn">QRをさらに圧縮して生成</button>
                 <p id="saveStatus" style="font-size:13px;color:#444;margin-top:8px;"></p>
                 <p id="airdropHint" class="airdrop-hint">AirDropで受け取るには：来場者のiPhoneで「AirDropを受信する」に設定し、この端末の「スマホに送る」をタップ → 来場者のiPhone名を選んで受信してください。受信後、写真アプリで保存できます。</p>
             </div>
 
-            <div id="fallbackArea" class="fallback-area">
-                <p>QRに収まらない画像は、以下で直接ダウンロードしてください。</p>
+            <div id="fallbackArea" class="fallback-area" style="display:none;">
+                <p>共有できない場合は、以下から直接ダウンロードしてください。</p>
                 <img id="previewImage" alt="キャンバスプレビュー">
                 <a id="downloadLink" download="pouring.png">画像をダウンロード</a>
             </div>
