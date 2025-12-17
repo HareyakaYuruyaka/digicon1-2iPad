@@ -55,7 +55,7 @@ button {
     flex-direction: column;
     gap: 15px;
     margin-right: 0; /* gapで調整しているので0でOKですが、微調整用 */
-    margin-left: 10;
+    margin-left: -10;
     
     /* サイドバーも少し下げたい場合はここに margin-top を追加 */
     margin-top: 0px; 
