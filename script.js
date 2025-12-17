@@ -7,7 +7,6 @@ window.addEventListener('load', () => {
     
     const colorPicker = document.getElementById('colorPicker');
     const resetButton = document.getElementById('resetButton');
-    const addToCupButton = document.getElementById('addToCupButton');
     const pourFromCupButton = document.getElementById('pourFromCupButton');
     const cupVisual = document.getElementById('cupVisual');
 
@@ -31,19 +30,17 @@ window.addEventListener('load', () => {
     let tilt = { x: 0, y: 0 };
     let isSensorActive = false; 
 
-    function updateDebugBox() {
-        // 表示しない
-    }
+    // デバッグ用（削除済み）
+    function updateDebugBox() {}
 
     // --- シミュレーション定数 ---
-    // 重力(マウスへの引力)は距離に比例するバネ係数的なものなので、距離がSCALE倍になれば力もSCALE倍、加速度もSCALE倍になるため変更不要
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
     const GRAVITY_GRACE_PERIOD = 0; 
 
-    // --- イベントリスナー ---
+    // --- 座標変換関数 ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
         // 実際の表示サイズ(rect)と内部解像度(.width)の比率を使って座標変換
@@ -55,6 +52,7 @@ window.addEventListener('load', () => {
         };
     }
 
+    // --- イベントリスナー ---
     particleCanvas.addEventListener('click', (event) => {
         if (!isPourMode) return;
         const pos = getCanvasCoordinates(event.clientX, event.clientY);
@@ -86,11 +84,12 @@ window.addEventListener('load', () => {
             const color = btn.getAttribute('data-color');
             cupColors.push(color);
             updateCupVisual();
-            updateDebugBox();
+            
+            // ボタンを押したときに少しアニメーションさせるなどの演出があればここに
         });
     });
 
-    function showToast(message, ms = 1200) {
+    function showToast(message, ms = 2000) {
         let t = document.getElementById('__toast');
         if (!t) {
             t = document.createElement('div');
@@ -106,11 +105,10 @@ window.addEventListener('load', () => {
     
     if (pourFromCupButton) {
         pourFromCupButton.addEventListener('click', () => {
-            if (cupColors.length === 0) { alert("コップに色がありません。"); return; }
+            if (cupColors.length === 0) { showToast("まずはインクを選んでください🎨"); return; }
             if (!isSensorActive) startSensor();
             setPourMode(true);
-            showToast('キャンバスをタップして流してください');
-            updateDebugBox();
+            showToast('キャンバスをタップして流してください 👆');
         });
     }
     
@@ -121,7 +119,6 @@ window.addEventListener('load', () => {
         setPourMode(false);
         clearParticleCanvas();
         clearPermanentCanvas();
-        updateDebugBox();
     });
 
     // --- 横向き固定機能 ---
@@ -159,8 +156,7 @@ window.addEventListener('load', () => {
                     if (response === 'granted') {
                         isSensorActive = true;
                         window.addEventListener('deviceorientation', handleOrientation);
-                        updateDebugBox();
-                        alert("傾き検知を有効にしました！");
+                        showToast("傾き検知ON！iPadを傾けてみてください");
                     }
                 })
                 .catch(e => console.error(e));
@@ -216,7 +212,7 @@ window.addEventListener('load', () => {
 
     function shareCurrentImageToPhone() {
         const showStatus = saveOverlay && saveOverlay.getAttribute('aria-hidden') === 'false';
-        if (showStatus) saveStatus.textContent = '共有を試みています...';
+        if (showStatus) saveStatus.textContent = '生成中...';
         
         setTimeout(() => {
             const dataURL = generateCombinedDataURL();
@@ -226,14 +222,14 @@ window.addEventListener('load', () => {
                     try {
                         await navigator.share({ files: [file], title: 'Pouring Art' });
                         if (showStatus) {
-                            saveStatus.textContent = '共有しました。';
+                            saveStatus.textContent = '共有完了';
                         }
                     } catch (err) {
-                        if (showStatus) saveStatus.textContent = '共有がキャンセルまたは失敗しました。';
+                        if (showStatus) saveStatus.textContent = '';
                         showFallback(dataURL);
                     }
                 } else {
-                    if (showStatus) saveStatus.textContent = 'このブラウザは共有機能未対応です。以下から保存してください。';
+                    if (showStatus) saveStatus.textContent = 'ブラウザ共有未対応';
                     showFallback(dataURL);
                 }
             }).catch(err => { console.error(err); });
@@ -266,7 +262,7 @@ window.addEventListener('load', () => {
 
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        // 解像度が上がった分、ブラーの半径も大きくしないと効果が薄くなる
+        // 保存時の画質処理（ここは変えず、画面表示をこれに近づけた）
         const blurRadius = 6 * SCALE;
         fastBlur(imageData, blurRadius); 
         fastBlur(imageData, blurRadius);
@@ -353,18 +349,19 @@ window.addEventListener('load', () => {
         isPourMode = mode;
         if (isPourMode) {
             particleCanvas.style.cursor = "copy";
-            pourFromCupButton.innerHTML = "<span class='btn-icon'>👆</span> 流す場所をキャンバスでクリック";
-            pourFromCupButton.style.background = "#fffae6"; 
-            pourFromCupButton.style.color = "#d48806";
-            pourFromCupButton.style.borderColor = "#ffe58f";
+            pourFromCupButton.innerHTML = "<span class='btn-icon'>👆</span> 画面をタップ！";
+            pourFromCupButton.style.background = "#fff3cd"; 
+            pourFromCupButton.style.color = "#856404";
+            pourFromCupButton.style.boxShadow = "none";
+            pourFromCupButton.style.border = "2px solid #ffeeba";
         } else {
             particleCanvas.style.cursor = "default";
-            pourFromCupButton.innerHTML = "<span class='btn-icon'>💧</span> 準備OK！コップから流す";
+            pourFromCupButton.innerHTML = "準備OK！コップから流す";
             pourFromCupButton.style.background = ""; 
             pourFromCupButton.style.color = "";
-            pourFromCupButton.style.borderColor = "";
+            pourFromCupButton.style.boxShadow = "";
+            pourFromCupButton.style.border = "";
         }
-        updateDebugBox();
     }
 
     function updateCupVisual() {
@@ -392,8 +389,7 @@ window.addEventListener('load', () => {
             
             const layerArea = endArea - startArea;
             
-            // パーティクル数はスケール前の密度感を維持するため、面積あたりの係数を調整
-            // (layerAreaは9倍になっているので、係数を1/9にすれば個数は同じになる)
+            // パーティクル数はスケール前の密度感を維持
             const particleCount = Math.floor(layerArea * (0.05 / (SCALE * SCALE)));
 
             for (let i = 0; i < particleCount; i++) {
@@ -420,7 +416,6 @@ window.addEventListener('load', () => {
 
         cupColors = [];
         updateCupVisual();
-        updateDebugBox();
     }
 
     // --- パーティクル処理 ---

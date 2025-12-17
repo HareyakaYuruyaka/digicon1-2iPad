@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Pouring Art - Pop'n Layout</title>
+    <title>Digital Pouring Art</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Pouring into the Display 3</h1>
+    <div class="app-header">
+        <h1>Pouring into the Display</h1>
+        <p class="subtitle">Digital Liquid Art Experience</p>
+    </div>
     
     <div class="main-container">
 
         <div class="sidebar">
             
-            <div class="step-section">
-                <div class="step-label">Step 1</div>
-                <h3>🎨 好きな色を入れる</h3>
+            <div class="step-card">
+                <div class="step-badge">Step 1</div>
+                <h3>🎨 インクを選ぶ</h3>
                 <div class="popn-wrapper">
                     <div class="popn-base">
                         <button class="color-btn popn-btn bottom-row" data-color="#FF0000" style="--btn-color: #FF0000;"></button>
@@ -28,20 +31,21 @@
                     </div>
                 </div>
                 <div id="cup-ui">
-                    <div id="cupVisual" title="コップの中身"></div>
+                    <div id="cupVisual" title="インクの重なり"></div>
                 </div>
             </div>
 
-            <div class="step-section">
-                <div class="step-label">Step 2</div>
+            <div class="step-card">
+                <div class="step-badge">Step 2</div>
+                <h3>💧 キャンバスへ流す</h3>
                 <button id="pourFromCupButton" class="action-btn primary-btn">
-                    <span class="btn-icon">💧</span> 準備OK！コップから流す
+                    準備OK！コップから流す
                 </button>
             </div>
 
-            <div class="step-section instruction-box">
-                <div class="step-label">Step 3</div>
-                <p>キャンバスをタッチして<br>iPadを傾けてみよう！📱</p>
+            <div class="step-card instruction-box">
+                <div class="step-badge">Step 3</div>
+                <p>キャンバスをタッチして<br>iPadを傾けて描こう！📱</p>
             </div>
 
             <div class="sub-controls">
@@ -54,6 +58,8 @@
             <div id="canvas-stack">
                 <canvas id="permanentCanvas"></canvas>
                 <canvas id="particleCanvas"></canvas>
+                
+                <div class="canvas-mask"></div>
             </div>
         </div>
 
@@ -65,15 +71,19 @@
             <button id="closeSaveOverlay" class="close-overlay">✕</button>
 
             <div id="saveActions" class="save-actions">
+                <h3>作品を共有する</h3>
                 <button id="shareToPhoneButton" class="action-btn success-btn">スマホに送る（AirDrop / 共有）</button>
-                <p id="saveStatus" style="font-size:13px;color:#444;margin-top:8px;"></p>
-                <p id="airdropHint" class="airdrop-hint">AirDropで受け取るには：来場者のiPhoneで「AirDropを受信する」に設定し、この端末の「スマホに送る」をタップ → 来場者のiPhone名を選んで受信してください。受信後、写真アプリで保存できます。</p>
+                <p id="saveStatus" class="status-text"></p>
+                <div id="airdropHint" class="airdrop-hint">
+                    <strong>AirDropで受け取るヒント:</strong><br>
+                    来場者のiPhoneで「AirDrop: すべての人(10分間)」に設定し、「スマホに送る」を押して表示されるリストから自分の端末を選んでください。
+                </div>
             </div>
 
             <div id="fallbackArea" class="fallback-area" style="display:none;">
-                <p>共有できない場合は、以下から直接ダウンロードしてください。</p>
+                <p>共有機能が使えない場合は、画像を長押しして保存してください。</p>
                 <img id="previewImage" alt="キャンバスプレビュー">
-                <a id="downloadLink" download="pouring.png">画像をダウンロード</a>
+                <a id="downloadLink" download="pouring.png" class="download-link">画像をダウンロード</a>
             </div>
         </div>
     </div>
