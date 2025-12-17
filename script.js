@@ -11,10 +11,16 @@ window.addEventListener('load', () => {
     const pourFromCupButton = document.getElementById('pourFromCupButton');
     const cupVisual = document.getElementById('cupVisual');
 
-    particleCanvas.width = 800;
-    particleCanvas.height = 600;
-    permanentCanvas.width = 800;
-    permanentCanvas.height = 600;
+    // ★★★ 解像度設定 (3倍) ★★★
+    // 画面表示はCSSで800x600にされますが、内部的には2400x1800で描画します
+    const SCALE = 3; 
+    const BASE_WIDTH = 800;
+    const BASE_HEIGHT = 600;
+
+    particleCanvas.width = BASE_WIDTH * SCALE;
+    particleCanvas.height = BASE_HEIGHT * SCALE;
+    permanentCanvas.width = BASE_WIDTH * SCALE;
+    permanentCanvas.height = BASE_HEIGHT * SCALE;
 
     // --- 変数 ---
     let particles = [];
@@ -30,6 +36,7 @@ window.addEventListener('load', () => {
     }
 
     // --- シミュレーション定数 ---
+    // 重力(マウスへの引力)は距離に比例するバネ係数的なものなので、距離がSCALE倍になれば力もSCALE倍、加速度もSCALE倍になるため変更不要
     const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
@@ -39,6 +46,7 @@ window.addEventListener('load', () => {
     // --- イベントリスナー ---
     function getCanvasCoordinates(clientX, clientY) {
         const rect = particleCanvas.getBoundingClientRect();
+        // 実際の表示サイズ(rect)と内部解像度(.width)の比率を使って座標変換
         const scaleX = particleCanvas.width / rect.width;
         const scaleY = particleCanvas.height / rect.height;
         return {
@@ -163,7 +171,8 @@ window.addEventListener('load', () => {
     }
 
     function handleOrientation(event) {
-        const sensitivity = 0.05; 
+        // 傾きによる加速度もスケールに合わせて大きくする
+        const sensitivity = 0.05 * SCALE; 
         if (event.gamma !== null && event.beta !== null) {
             tilt.x = event.beta * sensitivity; 
             tilt.y = -event.gamma * sensitivity;
@@ -195,10 +204,7 @@ window.addEventListener('load', () => {
         if (!saveOverlay) return;
         saveOverlay.setAttribute('aria-hidden', 'false');
         
-        // フォールバックエリアは初期状態では隠す
         fallbackArea.style.display = 'none';
-        
-        // ステータスリセット
         if (saveStatus) saveStatus.textContent = '';
 
         if (airdropHint) {
@@ -221,12 +227,9 @@ window.addEventListener('load', () => {
                         await navigator.share({ files: [file], title: 'Pouring Art' });
                         if (showStatus) {
                             saveStatus.textContent = '共有しました。';
-                            // 共有成功時はそのまま閉じるか、お好みで
-                            // closeSaveOverlayFunc();
                         }
                     } catch (err) {
                         if (showStatus) saveStatus.textContent = '共有がキャンセルまたは失敗しました。';
-                        // 失敗した場合もダウンロードリンクを表示する
                         showFallback(dataURL);
                     }
                 } else {
@@ -263,8 +266,10 @@ window.addEventListener('load', () => {
 
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        fastBlur(imageData, 6); 
-        fastBlur(imageData, 6);
+        // 解像度が上がった分、ブラーの半径も大きくしないと効果が薄くなる
+        const blurRadius = 6 * SCALE;
+        fastBlur(imageData, blurRadius); 
+        fastBlur(imageData, blurRadius);
 
         applyHighContrast(imageData, 10);
 
@@ -374,7 +379,8 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        const AREA_PER_UNIT = 100; 
+        // 面積計算もスケールに合わせる
+        const AREA_PER_UNIT = 100 * SCALE * SCALE; 
         let currentTotalArea = 0;
 
         for (const color of cupColors) {
@@ -385,10 +391,13 @@ window.addEventListener('load', () => {
             const endR = Math.sqrt(endArea / Math.PI);
             
             const layerArea = endArea - startArea;
-            const particleCount = Math.floor(layerArea * 0.05);
+            
+            // パーティクル数はスケール前の密度感を維持するため、面積あたりの係数を調整
+            // (layerAreaは9倍になっているので、係数を1/9にすれば個数は同じになる)
+            const particleCount = Math.floor(layerArea * (0.05 / (SCALE * SCALE)));
 
             for (let i = 0; i < particleCount; i++) {
-                const noise = (Math.random() - 0.5) * 10; 
+                const noise = (Math.random() - 0.5) * 10 * SCALE; 
                 const rBase = Math.sqrt(Math.random() * (endR*endR - startR*startR) + startR*startR);
                 const r = rBase + noise;
 
@@ -399,7 +408,7 @@ window.addEventListener('load', () => {
                 
                 const newParticle = createParticle(pX, pY, color);
                 
-                const spreadSpeed = 1.5 + Math.random();
+                const spreadSpeed = (1.5 + Math.random()) * SCALE;
                 newParticle.vx = Math.cos(angle) * spreadSpeed;
                 newParticle.vy = Math.sin(angle) * spreadSpeed;
                 
@@ -417,13 +426,13 @@ window.addEventListener('load', () => {
     // --- パーティクル処理 ---
     function createParticle(x, y, color) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 2;
+        const speed = Math.random() * 2 * SCALE;
         return {
             x: x, y: y,
             vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
             color: color,
-            radius: Math.random() * 2 + 2,
-            maxRadius: Math.random() * 15 + 10, 
+            radius: (Math.random() * 2 + 2) * SCALE,
+            maxRadius: (Math.random() * 15 + 10) * SCALE, 
             age: 0,
             maxAge: MAX_AGE_FRAMES + Math.random() * 150,
             gracePeriod: GRAVITY_GRACE_PERIOD 
@@ -491,6 +500,7 @@ window.addEventListener('load', () => {
                 const dx = p.x - p_other.x;
                 const dy = p.y - p_other.y;
                 const distSq = dx*dx + dy*dy;
+                // 半径がSCALE倍になっているので、距離判定もそれに合わせる
                 const minDist = p.radius + p_other.radius;
                 if (distSq < minDist * minDist) {
                     const distance = Math.sqrt(distSq);
@@ -505,7 +515,7 @@ window.addEventListener('load', () => {
             }
             p.x += p.vx;
             p.y += p.vy;
-            if (p.radius < p.maxRadius) { p.radius += 0.15; }
+            if (p.radius < p.maxRadius) { p.radius += 0.15 * SCALE; }
             if (p.x < p.radius) { p.x = p.radius; p.vx *= -0.5; }
             if (p.x > particleCanvas.width - p.radius) { p.x = particleCanvas.width - p.radius; p.vx *= -0.5; }
             if (p.y < p.radius) { p.y = p.radius; p.vy *= -0.5; }
