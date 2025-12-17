@@ -258,9 +258,8 @@ window.addEventListener('load', () => {
 
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        // 保存時の画質処理
-        // CSSの表示(24px)に合わせて強化 (8 * 3 = 24px)
-        const blurRadius = 8 * SCALE;
+        // 保存時の画質処理 (CSSの15pxに合わせて 5*SCALE)
+        const blurRadius = 5 * SCALE;
         fastBlur(imageData, blurRadius); 
         fastBlur(imageData, blurRadius);
 
