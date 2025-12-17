@@ -45,7 +45,7 @@ button {
 .canvas-area {
     /* flex-start（上揃え）になったので、ここでの指定が「上からの距離」になります */
     /* 30pt (約40px) 程度下げる場合 */
-    margin-top: 40px; 
+    margin-top: 100px; 
 }
 
 /* サイドバーの位置調整（必要なら） */
