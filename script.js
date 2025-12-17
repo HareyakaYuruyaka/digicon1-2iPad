@@ -259,8 +259,8 @@ window.addEventListener('load', () => {
         const imageData = tCtx.getImageData(0, 0, w, h);
         
         // 保存時の画質処理
-        // CSSの表示(15px)に合わせて調整 (5 * 3 = 15px)
-        const blurRadius = 5 * SCALE;
+        // CSSの表示(24px)に合わせて強化 (8 * 3 = 24px)
+        const blurRadius = 8 * SCALE;
         fastBlur(imageData, blurRadius); 
         fastBlur(imageData, blurRadius);
 
@@ -374,7 +374,7 @@ window.addEventListener('load', () => {
 
     function pourFromCup(centerX, centerY) {
         // ★修正点★ 面積（量）を決める係数
-        // 100(元の値) から 40 に減らしました
+        // 40で維持
         const AREA_PER_UNIT = 40 * SCALE * SCALE; 
         
         let currentTotalArea = 0;

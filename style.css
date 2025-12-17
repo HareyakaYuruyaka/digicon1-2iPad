@@ -227,8 +227,7 @@ button {
 }
 
 /* ★なめらかさの調整★
-   blurを15pxまで上げ、contrastで引き締めることで
-   ジャギジャギ感を消し、滑らかなベクター調にします
+   blurを24pxまで上げ、ジャギジャギ感を徹底的に消します。
 */
 #permanentCanvas, #particleCanvas {
     position: absolute;
@@ -236,8 +235,8 @@ button {
     width: 100%; height: 100%;
     background-color: transparent;
     
-    /* 変更点: blur(15px) contrast(50) */
-    filter: blur(15px) contrast(50);
+    /* 変更点: blur(24px) contrast(50) */
+    filter: blur(24px) contrast(50);
     
     /* 端の処理のために少し拡大して、マスクで隠す */
     transform: scale(1.02);
