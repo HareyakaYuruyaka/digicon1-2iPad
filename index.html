@@ -7,14 +7,15 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Pouring into the Display 13</h1>
+    <h1>Pouring into the Display 2</h1>
     
     <div class="main-container">
 
         <div class="sidebar">
-            <div class="controls-section">
-                <h3>🎨 色を選んで投入</h3>
-    
+            
+            <div class="step-section">
+                <div class="step-label">Step 1</div>
+                <h3>🎨 好きな色を入れる</h3>
                 <div class="popn-wrapper">
                     <div class="popn-base">
                         <button class="color-btn popn-btn bottom-row" data-color="#FF0000" style="--btn-color: #FF0000;"></button>
@@ -26,17 +27,27 @@
                         <button class="color-btn popn-btn bottom-row" data-color="#FF00FF" style="--btn-color: #FF00FF;"></button>
                     </div>
                 </div>
-
                 <div id="cup-ui">
                     <div id="cupVisual" title="コップの中身"></div>
                 </div>
-    
-                <button id="pourFromCupButton">コップから流す</button>
-                <p>（ボタンを押した後、キャンバスをクリック）</p>
             </div>
 
-            <button id="resetButton">全部やり直す</button>
-            <button id="saveImageButton">画像を保存</button>
+            <div class="step-section">
+                <div class="step-label">Step 2</div>
+                <button id="pourFromCupButton" class="action-btn primary-btn">
+                    <span class="btn-icon">💧</span> 準備OK！コップから流す
+                </button>
+            </div>
+
+            <div class="step-section instruction-box">
+                <div class="step-label">Step 3</div>
+                <p>キャンバスをタッチして<br>iPadを傾けて描こう！📱</p>
+            </div>
+
+            <div class="sub-controls">
+                <button id="resetButton" class="action-btn danger-btn">🗑️ 最初からやり直す</button>
+                <button id="saveImageButton" class="action-btn success-btn">📸 画像を保存・共有</button>
+            </div>
         </div>
 
         <div class="canvas-area">
@@ -56,8 +67,8 @@
             <div id="qrContainer" class="qr-container"></div>
 
             <div id="saveActions" class="save-actions">
-                <button id="shareToPhoneButton">スマホに送る（AirDrop / 共有）</button>
-                <button id="regenQrButton">QRをさらに圧縮して生成</button>
+                <button id="shareToPhoneButton" class="action-btn success-btn">スマホに送る（AirDrop / 共有）</button>
+                <button id="regenQrButton" class="action-btn">QRをさらに圧縮して生成</button>
                 <p id="saveStatus" style="font-size:13px;color:#444;margin-top:8px;"></p>
                 <p id="airdropHint" class="airdrop-hint">AirDropで受け取るには：来場者のiPhoneで「AirDropを受信する」に設定し、この端末の「スマホに送る」をタップ → 来場者のiPhone名を選んで受信してください。受信後、写真アプリで保存できます。</p>
             </div>

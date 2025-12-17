@@ -25,24 +25,9 @@ window.addEventListener('load', () => {
     let tilt = { x: 0, y: 0 };
     let isSensorActive = false; 
 
-    // --- 簡易デバッグボックス ---
-    const __debugBox = document.createElement('div');
-    __debugBox.id = '__debugBox';
-    __debugBox.style.position = 'fixed';
-    __debugBox.style.right = '12px';
-    __debugBox.style.top = '12px';
-    __debugBox.style.background = 'rgba(0,0,0,0.6)';
-    __debugBox.style.color = '#fff';
-    __debugBox.style.padding = '6px 8px';
-    __debugBox.style.borderRadius = '6px';
-    __debugBox.style.fontSize = '12px';
-    __debugBox.style.zIndex = 20000;
-    __debugBox.style.maxWidth = '220px';
-    __debugBox.style.pointerEvents = 'none';
-    document.body.appendChild(__debugBox);
-
+    // --- 簡易デバッグボックス (削除済み) ---
     function updateDebugBox() {
-        __debugBox.textContent = `Mode=${isPourMode ? 'POUR' : 'EDIT'} Colors=${cupColors.length} P=${particles.length} Sensor=${isSensorActive ? 'ON' : 'OFF'}`;
+        // 表示しない
     }
 
     // --- シミュレーション定数 ---
@@ -203,7 +188,7 @@ window.addEventListener('load', () => {
     const airdropHint = document.getElementById('airdropHint');
 
     saveImageButton && saveImageButton.addEventListener('click', async () => {
-        shareCurrentImageToPhone();
+        openSaveOverlay();
     });
     closeSaveOverlay && closeSaveOverlay.addEventListener('click', () => closeSaveOverlayFunc());
     shareToPhoneButton && shareToPhoneButton.addEventListener('click', () => {
@@ -406,12 +391,21 @@ window.addEventListener('load', () => {
         isPourMode = mode;
         if (isPourMode) {
             particleCanvas.style.cursor = "copy";
-            pourFromCupButton.style.backgroundColor = "#ffc";
-            pourFromCupButton.textContent = "流す場所をキャンバスでクリック";
+            
+            // ボタンの文言切り替え（新しいStep表示に合わせるならここはシンプルで良いかも）
+            pourFromCupButton.innerHTML = "<span class='btn-icon'>👆</span> 流す場所をキャンバスでクリック";
+            pourFromCupButton.style.background = "#fffae6"; 
+            pourFromCupButton.style.color = "#d48806";
+            pourFromCupButton.style.borderColor = "#ffe58f";
+
         } else {
             particleCanvas.style.cursor = "default";
-            pourFromCupButton.style.backgroundColor = "";
-            pourFromCupButton.textContent = "コップから流す";
+            
+            // 元に戻す
+            pourFromCupButton.innerHTML = "<span class='btn-icon'>💧</span> 準備OK！コップから流す";
+            pourFromCupButton.style.background = ""; // クラスのCSSに戻る
+            pourFromCupButton.style.color = "";
+            pourFromCupButton.style.borderColor = "";
         }
         updateDebugBox();
     }
