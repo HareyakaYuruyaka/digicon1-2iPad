@@ -28,7 +28,7 @@ button {
     flex-direction: row;
     
     /* 【重要】ここを center から flex-start に変更します */
-    align-items: flex-end; 
+    align-items: left; 
     
     justify-content: right; 
     width: 100%;
