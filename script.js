@@ -258,7 +258,7 @@ window.addEventListener('load', () => {
 
         const imageData = tCtx.getImageData(0, 0, w, h);
         
-        // 保存時の画質処理 (CSSの15pxに合わせて 5*SCALE)
+        // 保存時の画質処理
         const blurRadius = 5 * SCALE;
         fastBlur(imageData, blurRadius); 
         fastBlur(imageData, blurRadius);
@@ -372,8 +372,7 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        // ★修正点★ 面積（量）を決める係数
-        // 40で維持
+        // ★修正点★ 面積（量）を決める係数 (40のまま維持)
         const AREA_PER_UNIT = 40 * SCALE * SCALE; 
         
         let currentTotalArea = 0;
@@ -524,4 +523,9 @@ window.addEventListener('load', () => {
 
     clearPermanentCanvas(); 
     animate();
+
+    // ★追加: ダブルタップによるズーム防止（念のためJSでも制御）
+    document.addEventListener('dblclick', function(event) {
+        event.preventDefault();
+    }, { passive: false });
 });
