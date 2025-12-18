@@ -5,11 +5,11 @@ body {
     background-color: #f4f7f6;
     margin: 0;
     
-    /* ★変更点: スクロール・ズーム・バウンス防止設定 */
-    touch-action: none;       /* ブラウザ標準のタッチ操作（スクロール/ズーム）を無効化 */
-    overflow: hidden;         /* スクロールバーを非表示 */
-    overscroll-behavior: none;/* iOSのバウンス効果を無効化 */
-    position: fixed;          /* 画面全体を固定 */
+    /* スクロール・ズーム・バウンス防止設定 */
+    touch-action: none;
+    overflow: hidden;
+    overscroll-behavior: none;
+    position: fixed;
     width: 100%;
     height: 100%;
     
@@ -23,7 +23,7 @@ body {
 .app-header {
     text-align: center;
     margin: 20px 0 30px 0;
-    flex-shrink: 0; /* 縮まないようにする */
+    flex-shrink: 0;
 }
 .app-header h1 {
     margin: 0;
@@ -48,9 +48,6 @@ body {
     gap: 60px;
     padding: 0 20px 60px 20px;
     box-sizing: border-box;
-    
-    /* 必要に応じて中身だけスクロールさせたい場合はここを調整しますが、
-       今回は全体固定の方針で進めます */
 }
 
 /* --- サイドバー --- */
@@ -108,7 +105,6 @@ button {
     border: none;
     outline: none;
     font-family: inherit;
-    /* ボタン等はタッチ操作可能にする（touch-action: manipulation でも可） */
     touch-action: manipulation;
 }
 
@@ -240,7 +236,7 @@ button {
     overflow: hidden;
 }
 
-/* blur 15px バージョン（前回と同じ） */
+/* blur 15px バージョン（なめらか設定） */
 #permanentCanvas, #particleCanvas {
     position: absolute;
     top: 0; left: 0;
