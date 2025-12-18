@@ -34,8 +34,8 @@ window.addEventListener('load', () => {
     function updateDebugBox() {}
 
     // --- シミュレーション定数 ---
-    // ★変更点1: 重力を 0.005 -> 0.0015 に弱めてゆっくりにする
-    const gravityStrength = 0.0015; 
+    // ★戻しました: 重力 0.005
+    const gravityStrength = 0.005; 
     const friction = 0.90;         
     const repulsionStrength = 0.5;
     const MAX_AGE_FRAMES = 120; 
@@ -373,8 +373,8 @@ window.addEventListener('load', () => {
     }
 
     function pourFromCup(centerX, centerY) {
-        // ★変更点2: 量を 40 -> 70 に増やしてボリュームアップ
-        const AREA_PER_UNIT = 70 * SCALE * SCALE; 
+        // ★戻しました: 量 40
+        const AREA_PER_UNIT = 40 * SCALE * SCALE; 
         
         let currentTotalArea = 0;
 
@@ -450,8 +450,8 @@ window.addEventListener('load', () => {
 
     function drawOnPermanent(p) {
         permanentContext.beginPath();
-        // ★変更点3: 軌跡をしっかり残すため透明度を 0.6 -> 0.9 にアップ
-        permanentContext.globalAlpha = 0.9;
+        // ★戻しました: 透明度 0.6
+        permanentContext.globalAlpha = 0.6;
         permanentContext.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         permanentContext.fillStyle = p.color;
         permanentContext.fill();
